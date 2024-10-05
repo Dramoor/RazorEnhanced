@@ -6,6 +6,7 @@ using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using Microsoft.Scripting.Utils;
 using RazorEnhanced.UOS;
+using RazorEnhanced.RCE;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -153,6 +154,8 @@ namespace RazorEnhanced.UI
                             suffix = ".uos";
                         if (scriptListView.Name == "csScriptListView")
                             suffix = ".cs";
+                        if (scriptListView.Name == "rceScriptListView")
+                            suffix = ".rce";
                     }
                 }
 
@@ -314,6 +317,11 @@ namespace RazorEnhanced.UI
                     fastColoredTextBoxEditor.AutoIndentExistingLines = true;
                     UpdateSyntaxHighlight();
                     break;
+                case ScriptLanguage.RAZORCE:
+                    fastColoredTextBoxEditor.Language = FastColoredTextBoxNS.Language.Rce;
+                    fastColoredTextBoxEditor.AutoIndentExistingLines = true;
+                    UpdateRCESyntaxHighlight();
+                    break;
             }
         }
 
@@ -356,6 +364,64 @@ namespace RazorEnhanced.UI
             List<String> aliases = uosEngine.AllAliases();
             pattern = $@"\b({String.Join("|", aliases)})\b";
             this.fastColoredTextBoxEditor.SyntaxHighlighter.UosAttributeRegex = new Regex(pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+            // Fill in autocomplete
+            List<AutocompleteItem> items = new List<AutocompleteItem>();
+            keywords = keywords.Distinct().ToList();
+            keywords.Sort();
+            foreach (var item in keywords)
+            {
+                items.Add(new AutocompleteItem(item) { ImageIndex = 0 });
+            }
+            m_popupMenu.Items.SetAutocompleteItems(items);
+
+            //Increase the width for individual items so that the entire name is visible
+            m_popupMenu.Items.MaximumSize = new Size(m_popupMenu.Items.Width + 400, m_popupMenu.Items.Height);
+            m_popupMenu.Items.Width = m_popupMenu.Items.Width + 400;
+
+            //
+            ToolTipDescriptions tooltip;
+            var methods = keywords.ToArray();
+            var autodocMethods = new Dictionary<string, ToolTipDescriptions>();
+            foreach (var method in keywords)
+            {
+                var methodName = method;
+                var prms_name = new List<String>();
+                var prms_type = new List<String>();
+                var prms_name_type = new List<String>();
+                var prms_name_type_desc = new List<String>();
+                prms_name_type_desc.Add("Param1");
+                prms_name_type_desc.Add("Param2");
+
+                if (!autodocMethods.ContainsKey((string)method))
+                {
+                    //tooltip = new ToolTipDescriptions(method, prms_name_type_desc.ToArray(), method.returnType, method.itemDescription.Trim() + "\n");
+                    tooltip = new ToolTipDescriptions((string)method, prms_name_type_desc.ToArray(), "ret", "desc" + "\n");
+                    autodocMethods.Add((string)method, tooltip);
+                }
+            }
+        }
+
+        public void UpdateRCESyntaxHighlight()
+        {
+            // keywords
+            var rceEngine = new RazorCeEngine();
+            if (rceEngine == null) return;
+
+            List<String> keywords = rceEngine.AllKeywords();
+            string[] syntax =
+            {
+                "and", "break", "continue", "elif", "else", "for", "if", "not", "or", "while", "true", "false",
+                "endif", "endwhile", "endfor"
+            };
+            keywords.AddRange(syntax);
+            String pattern = $@"\b({String.Join("|", keywords)})\b";
+            this.fastColoredTextBoxEditor.SyntaxHighlighter.RceKeywordRegex = new Regex(pattern, RegexOptions.Compiled);
+
+            // attributes
+            List<String> aliases = rceEngine.AllAliases();
+            pattern = $@"\b({String.Join("|", aliases)})\b";
+            this.fastColoredTextBoxEditor.SyntaxHighlighter.RceAttributeRegex = new Regex(pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
             // Fill in autocomplete
             List<AutocompleteItem> items = new List<AutocompleteItem>();
@@ -607,6 +673,11 @@ namespace RazorEnhanced.UI
         }
 
         private void OnTracebackUOS(TraceBackFrame frame, string result, object payload)
+        {
+
+        }
+
+        private void OnTracebackRCE(TraceBackFrame frame, string result, object payload)
         {
 
         }
@@ -1053,7 +1124,7 @@ namespace RazorEnhanced.UI
 
             OpenFileDialog open = new OpenFileDialog
             {
-                Filter = "Script Files|*.py;*.txt;*.uos;*.cs",
+                Filter = "Script Files|*.py;*.txt;*.uos;*.cs;*.rce",
                 RestoreDirectory = true
             };
             if (open.ShowDialog() == DialogResult.OK)
@@ -1127,6 +1198,8 @@ namespace RazorEnhanced.UI
                     filter = "C# Files|*.cs|Text Files|*.txt"; break;
                 case ScriptLanguage.UOSTEAM:
                     filter = "UOS Files|*.uos|Text Files|*.txt"; break;
+                case ScriptLanguage.RAZORCE:
+                    filter = "RCE Files|*.rce|Text Files|*.txt"; break;
             }
 
 
@@ -1558,6 +1631,32 @@ namespace RazorEnhanced.UI
                     }
 
                 case FastColoredTextBoxNS.Language.Uos:
+                    {
+                        string pattern = @"(.*)useobject\s+(\w+)(.*$)";
+                        Regex r = new Regex(pattern, RegexOptions.IgnoreCase);
+                        Match m = r.Match(lineToChange);
+                        if (m.Success && m.Groups.Count == 4)
+                        {
+                            string frontPart = m.Groups[1].Value;
+                            string textSerial = m.Groups[2].Value;
+                            string lastPart = m.Groups[3].Value;
+
+                            var result = FindSerialTypeColor(textSerial);
+                            if (result.HasValue)
+                            {
+                                var objectData = result.Value;
+                                fastColoredTextBoxEditor.BeginUpdate();
+                                string newLine = $"{frontPart}usetype 0x{objectData.itemId:x} {objectData.hue} {objectData.container}{lastPart}";
+                                fastColoredTextBoxEditor.TextSource[currentLine].Clear();
+                                fastColoredTextBoxEditor.TextSource[currentLine].AddRange(ConvertStringToCharEnumerable(newLine));
+                                fastColoredTextBoxEditor.EndUpdate();
+                                fastColoredTextBoxEditor.Invalidate();
+                            }
+
+                        }
+                        break;
+                    }
+                case FastColoredTextBoxNS.Language.Rce:
                     {
                         string pattern = @"(.*)useobject\s+(\w+)(.*$)";
                         Regex r = new Regex(pattern, RegexOptions.IgnoreCase);

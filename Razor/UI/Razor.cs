@@ -692,8 +692,10 @@ namespace Assistant
         private ColumnHeader fullFilePath;
         private GroupBox scriptControlBox;
         private TabPage uosScriptingTab;
+        private TabPage rceScriptingTab;
         private TabPage csScriptingTab;
         private ScriptListView uosScriptListView;
+        private ScriptListView rceScriptListView;
         private ColumnHeader columnHeader1;
         private ColumnHeader columnHeader2;
         private ColumnHeader columnHeader3;
@@ -734,6 +736,16 @@ namespace Assistant
         private ColumnHeader preload;
         private ColumnHeader columnHeader19;
         private ColumnHeader columnHeader20;
+        private ColumnHeader columnHeader31;
+        private ColumnHeader columnHeader32;
+        private ColumnHeader columnHeader33;
+        private ColumnHeader columnHeader34;
+        private ColumnHeader columnHeader35;
+        private ColumnHeader columnHeader36;
+        private ColumnHeader columnHeader37;
+        private ColumnHeader columnHeader38;
+        private ColumnHeader columnHeader39;
+        private ColumnHeader columnHeader40;
         private CheckBox remoteControl;
         private CheckBox useUo3D;
 
@@ -1009,6 +1021,18 @@ namespace Assistant
             this.columnHeader17 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader20 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader18 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.rceScriptingTab = new System.Windows.Forms.TabPage();
+            this.rceScriptListView = new RazorEnhanced.UI.ScriptListView();
+            this.columnHeader31 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader32 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader33 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader34 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader35 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader36 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader37 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader38 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader39 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader40 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.EnhancedAgent = new System.Windows.Forms.TabPage();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.eautoloot = new System.Windows.Forms.TabPage();
@@ -1525,6 +1549,7 @@ namespace Assistant
             this.pythonScriptingTab.SuspendLayout();
             this.uosScriptingTab.SuspendLayout();
             this.csScriptingTab.SuspendLayout();
+            this.rceScriptingTab.SuspendLayout();
             this.EnhancedAgent.SuspendLayout();
             this.tabControl1.SuspendLayout();
             this.eautoloot.SuspendLayout();
@@ -3631,6 +3656,7 @@ namespace Assistant
             this.AllScriptsTab.Controls.Add(this.pythonScriptingTab);
             this.AllScriptsTab.Controls.Add(this.uosScriptingTab);
             this.AllScriptsTab.Controls.Add(this.csScriptingTab);
+            this.AllScriptsTab.Controls.Add(this.rceScriptingTab);
             this.AllScriptsTab.Location = new System.Drawing.Point(-2, 0);
             this.AllScriptsTab.Name = "AllScriptsTab";
             this.AllScriptsTab.SelectedIndex = 0;
@@ -3859,6 +3885,103 @@ namespace Assistant
             // 
             this.columnHeader9.Text = "";
             this.columnHeader9.Width = 0;
+            // 
+            // rceScriptingTab
+            // 
+            this.rceScriptingTab.Controls.Add(this.rceScriptListView);
+            this.rceScriptingTab.Location = new System.Drawing.Point(4, 22);
+            this.rceScriptingTab.Name = "rceScriptingTab";
+            this.rceScriptingTab.Size = new System.Drawing.Size(469, 339);
+            this.rceScriptingTab.TabIndex = 14;
+            this.rceScriptingTab.Text = "RCE";
+            this.rceScriptingTab.UseVisualStyleBackColor = true;
+            // 
+            // rceScriptListView
+            // 
+            this.rceScriptListView.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+            | System.Windows.Forms.AnchorStyles.Left)
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.rceScriptListView.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.columnHeader31,
+            this.columnHeader32,
+            this.columnHeader33,
+            this.columnHeader34,
+            this.columnHeader35,
+            this.columnHeader36,
+            this.columnHeader37,
+            this.columnHeader38,
+            this.columnHeader39,
+            this.columnHeader40});
+            this.rceScriptListView.FullRowSelect = true;
+            this.rceScriptListView.GridLines = true;
+            this.rceScriptListView.HideSelection = false;
+            this.rceScriptListView.LabelWrap = false;
+            this.rceScriptListView.Location = new System.Drawing.Point(4, 1);
+            this.rceScriptListView.MultiSelect = false;
+            this.rceScriptListView.Name = "rceScriptListView";
+            this.rceScriptListView.ShowItemToolTips = true;
+            this.rceScriptListView.Size = new System.Drawing.Size(463, 335);
+            this.rceScriptListView.TabIndex = 49;
+            this.rceScriptListView.UseCompatibleStateImageBehavior = false;
+            this.rceScriptListView.View = System.Windows.Forms.View.Details;
+            this.rceScriptListView.ColumnClick += new System.Windows.Forms.ColumnClickEventHandler(this.scriptlistView_ColumnClick);
+            this.rceScriptListView.SelectedIndexChanged += new System.EventHandler(this.scriptlistView_SelectedIndexChanged);
+            this.rceScriptListView.MouseClick += new System.Windows.Forms.MouseEventHandler(this.scriptlistView_MouseClick);
+            this.rceScriptListView.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.scriptlistView_MouseDoubleClick);
+            // 
+            // columnHeader31
+            // 
+            this.columnHeader31.Text = "Filename";
+            this.columnHeader31.Width = 350;
+            // 
+            // columnHeader32
+            // 
+            this.columnHeader32.Text = "Status";
+            this.columnHeader32.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            this.columnHeader32.Width = 80;
+            // 
+            // columnHeader33
+            // 
+            this.columnHeader33.Text = "Loop";
+            this.columnHeader33.Width = 50;
+            // 
+            // columnHeader34
+            // 
+            this.columnHeader34.Text = "A.S.";
+            this.columnHeader34.Width = 55;
+            // 
+            // columnHeader35
+            // 
+            this.columnHeader35.Text = "Wait";
+            this.columnHeader35.Width = 40;
+            // 
+            // columnHeader36
+            // 
+            this.columnHeader36.Text = "HotKey";
+            this.columnHeader36.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            this.columnHeader36.Width = 80;
+            // 
+            // columnHeader37
+            // 
+            this.columnHeader37.Text = "KeyPass";
+            this.columnHeader37.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            this.columnHeader37.Width = 80;
+            // 
+            // columnHeader38
+            // 
+            this.columnHeader38.Text = "#";
+            this.columnHeader38.Width = 40;
+            // 
+            // columnHeader39
+            // 
+            this.columnHeader39.Text = "Preload";
+            this.columnHeader39.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            this.columnHeader39.Width = 0;
+            // 
+            // columnHeader40
+            // 
+            this.columnHeader40.Text = "";
+            this.columnHeader40.Width = 0;
             // 
             // csScriptingTab
             // 
@@ -9326,6 +9449,7 @@ namespace Assistant
             this.pythonScriptingTab.ResumeLayout(false);
             this.uosScriptingTab.ResumeLayout(false);
             this.csScriptingTab.ResumeLayout(false);
+            this.rceScriptingTab.ResumeLayout(false);
             this.EnhancedAgent.ResumeLayout(false);
             this.tabControl1.ResumeLayout(false);
             this.eautoloot.ResumeLayout(false);

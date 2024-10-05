@@ -105,6 +105,12 @@ namespace FastColoredTextBoxNS
         public Regex UosStringRegex;
         public Regex UosFunctionsRegex;
 
+        public Regex RceCommentRegex;
+        public Regex RceKeywordRegex;
+        public Regex RceAttributeRegex;
+        public Regex RceNumberRegex;
+        public Regex RceStringRegex;
+        public Regex RceFunctionsRegex;
 
         protected Regex PHPCommentRegex1,
                       PHPCommentRegex2,
@@ -201,6 +207,9 @@ namespace FastColoredTextBoxNS
                 case Language.Uos:
                     UosSyntaxHighlight(range);
                     break;
+                case Language.Rce:
+                    RceSyntaxHighlight(range);
+                    break;
                 default:
                     break;
             }
@@ -262,6 +271,9 @@ namespace FastColoredTextBoxNS
                     break;
                 case Language.Uos:
                     UosAutoIndentNeeded(sender, args);
+                    break;
+                case Language.Rce:
+                    RceAutoIndentNeeded(sender, args);
                     break;
                 default:
                     break;
@@ -691,6 +703,13 @@ namespace FastColoredTextBoxNS
                     KeywordStyle = BlueStyle;
                     break;
                 case Language.Uos:
+                    StringStyle = GreenStyle;
+                    CommentStyle = GrayStyle;
+                    NumberStyle = BlackStyle;
+                    KeywordStyle = BlueStyle;
+                    FunctionsStyle = MaroonStyle;
+                    break;
+                case Language.Rce:
                     StringStyle = GreenStyle;
                     CommentStyle = GrayStyle;
                     NumberStyle = BlackStyle;
@@ -1440,6 +1459,107 @@ yellowhits|war|criminal|enemy|friend|gray|innocent|murderer|bandage|restocking|c
             }
         }
 
+
+        /// 
+        ///
+        protected void InitRceRegex()
+        {
+            RceStringRegex = new Regex(@"""""|''|"".*?[^\\]""|'.*?[^\\]'", RegexCompiledOption);
+            RceCommentRegex = new Regex(@"//.*$", RegexOptions.Multiline | RegexCompiledOption);
+            RceNumberRegex = new Regex(@"\b\d+[\.]?\d*([eE]\-?\d+)?[lLdDfF]?\b|\b0x[a-fA-F\d]+\b",
+                                           RegexCompiledOption);
+            RceKeywordRegex =
+                new Regex(
+                    @"\b(and|break|continue|else|elseif|endif|endfor|endwhile|false|for|if|to|not|or|true|while|replay|pause|stop|waitfortarget|walk|turn|run|waitforgump|waitforcontents|waitforjournal|waitforprompt|waitforcontext|waitforproperties)\b",
+                    RegexCompiledOption);
+
+            RceFunctionsRegex =
+                new Regex(
+                    @"\b(sysmsg|targettype|msg|fly|land|setability|attack|clearhands|clickobject|bandageself|useonce|clearusequeue|moveitem|target|
+moveitemoffset|movetypeoffset|pathfindto|useskill|feed|rename|shownames|togglehands|equipitem|togglemounted|equipwand|buy|sell|clearbuy|location|clearsell|
+organizer|restock|autoloot|autotargetobject|dress|undress|dressconfig|toggleautoloot|togglescavenger|counter|unsetalias|setalias|promptalias|replygump|
+closegump|clearjournal|poplist|pushlist|removelist|createlist|clearlist|info|ping|playmacro|playsound|resync|snapshot|hotkeys|where|messagebox|mapuo|clickscreen|
+paperdoll|helpbutton|guildbutton|questsbutton|logoutbutton|virtue|headmsg|partymsg|guildmsg|allymsg|whispermsg|yellmsg|chatmsg|emotemsg|promptmsg|timermsg|
+cancelprompt|addfriend|removefriend|contextmenu|ignoreobject|clearignorelist|setskill|autocolorpick|miniheal|bigheal|cast|chivalryheal|canceltarget|cancelautotarget|
+target|targetground|targettile|targettileoffset|targettilerelative|targetresource|cleartargetqueue|warmode|settimer|removetimer|createtimer|getenemy|
+getfriend|namespace|script|usetype|movetype|findalias|x|y|z|organizing|contents|inregion|skill|findobject|useobject|distance|graphic|inrange|buffexists|
+property|durability|findtype|findlayer|skillstate|counttype|counttypeground|findwand|inparty|infriendlist|ingump|gumpexists|injournal|listexists|list|
+inlist|timer|timerexists|targetexists|weight|maxweight|diffweight|mana|maxmana|stam|maxstam|dex|int|str|physical|fire|cold|poison|energy|followers|
+maxfollowers|gold|hidden|luck|waitingfortarget|hits|diffhits|maxhits|name|dead|direction|direction|directionname|flying|paralyzed|poisoned|mounted|
+yellowhits|war|criminal|enemy|friend|gray|innocent|murderer|bandage|restocking|color)\b",
+                    RegexCompiledOption);
+
+            UosAttributeRegex = new Regex(@"\b(lastobject|found|enemy|friend|ground|any|backpack|self|bank|lasttarget|last|mount|lefthand|righthand)\b",
+                RegexOptions.IgnoreCase);
+        }
+
+        public virtual void RceSyntaxHighlight(Range range)
+        {
+            range.tb.CommentPrefix = "//";
+            range.tb.LeftBracket = '(';
+            range.tb.RightBracket = ')';
+            range.tb.LeftBracket2 = '{';
+            range.tb.RightBracket2 = '}';
+            range.tb.BracketsHighlightStrategy = BracketsHighlightStrategy.Strategy2;
+
+            range.tb.AutoIndentCharsPatterns
+                = @"
+^\s*[\w\.]+(\s\w+)?\s*(?<range>=)\s*(?<range>[^;]+);
+^\s*(case|default)\s*[^:]*(?<range>:)\s*(?<range>[^;]+);
+";
+            //clear style of changed range
+            range.ClearStyle(StringStyle, CommentStyle, NumberStyle, AttributeStyle, ClassNameStyle, KeywordStyle);
+            //
+            if (RceStringRegex == null)
+                InitRceRegex();
+            //string highlighting
+            range.SetStyle(StringStyle, RceStringRegex);
+            //number highlighting
+            range.SetStyle(NumberStyle, RceNumberRegex);
+            //attribute highlighting
+            range.SetStyle(AttributeStyle, RceAttributeRegex);
+            //function highlighting
+            range.SetStyle(FunctionsStyle, RceFunctionsRegex);
+            //keyword highlighting
+            range.SetStyle(KeywordStyle, RceKeywordRegex);
+            //comment highlighting
+            range.SetStyle(CommentStyle, RceCommentRegex);
+
+            //clear folding markers
+            range.ClearFoldingMarkers();
+            //set folding markers
+            range.SetFoldingMarkers("{", "}"); //allow to collapse brackets block
+        }
+
+        protected void RceAutoIndentNeeded(object sender, AutoIndentEventArgs args)
+        {
+            //end of block
+            if (Regex.IsMatch(args.LineText, @"^\s*(endif|endwhile|endfor|until)\b", RegexOptions.IgnoreCase))
+            {
+
+                args.Shift = -args.TabLength;
+                args.ShiftNextLines = -args.TabLength;
+                //args.LineText = args.LineText.TrimStart();
+                return;
+            }
+            // then ...
+            if (Regex.IsMatch(args.LineText, @"\b(then)\s*\S+"))
+                return;
+            //start of operator block
+            if (Regex.IsMatch(args.LineText, @"^\s*(for|while|if)\b", RegexOptions.IgnoreCase))
+            {
+                args.ShiftNextLines = args.TabLength;
+                return;
+            }
+
+            //Statements else, elseif, case etc
+            if (Regex.IsMatch(args.LineText, @"^\s*(else|elseif)\b", RegexOptions.IgnoreCase))
+            {
+                args.Shift = -args.TabLength;
+                return;
+            }
+        }
+
         protected void InitPythonRegex()
         {
             PythonStringRegex1 = new Regex("\"[^\"\\\\]*(\\\\.[^\"\\\\]*)*\"", RegexCompiledOption);
@@ -1647,6 +1767,7 @@ yellowhits|war|criminal|enemy|friend|gray|innocent|murderer|bandage|restocking|c
         JS,
         Lua,
         Python,
-        Uos
+        Uos,
+        Rce
     }
 }

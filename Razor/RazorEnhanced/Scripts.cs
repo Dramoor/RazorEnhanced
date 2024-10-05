@@ -32,12 +32,14 @@ namespace RazorEnhanced
         internal static List<ScriptItem> PyScripts = new List<ScriptItem>();
         internal static List<ScriptItem> UosScripts = new List<ScriptItem>();
         internal static List<ScriptItem> CsScripts = new List<ScriptItem>();
+        internal static List<ScriptItem> RceScripts = new List<ScriptItem>();
 
         internal static void Clear()
         {
             PyScripts = new List<ScriptItem>();
             UosScripts = new List<ScriptItem>();
             CsScripts = new List<ScriptItem>();
+            RceScripts = new List<ScriptItem>();
         }
 
         public static void UpdateScriptItems()
@@ -45,6 +47,7 @@ namespace RazorEnhanced
             Scripts.PyScripts = EnhancedScript.Service.ScriptListTabPy().Apply(script => script.ToScriptItem()).ToList();
             Scripts.CsScripts = EnhancedScript.Service.ScriptListTabCs().Apply(script => script.ToScriptItem()).ToList();
             Scripts.UosScripts = EnhancedScript.Service.ScriptListTabUos().Apply(script => script.ToScriptItem()).ToList();
+            Scripts.RceScripts = EnhancedScript.Service.ScriptListTabUos().Apply(script => script.ToScriptItem()).ToList();
         }
 
         public static void LoadEnhancedScripts(List<RazorEnhanced.Scripts.ScriptItem> scriptItems)
@@ -53,6 +56,7 @@ namespace RazorEnhanced
             int prevPyIndex = 0;
             int prevUosIndex = 0;
             int prevCsIndex = 0;
+            int prevRceIndex = 0;
             foreach (var item in scriptItems)
             {
                 // if no fullname then set it to local 
@@ -104,6 +108,18 @@ namespace RazorEnhanced
                         }
                         Scripts.CsScripts.Add(item);
                         break;
+                    case ".rce":
+                        if (item.Position == 0)
+                        {
+                            prevRceIndex++;
+                            item.Position = prevCsIndex;
+                        }
+                        else
+                        {
+                            prevRceIndex = item.Position;
+                        }
+                        Scripts.RceScripts.Add(item);
+                        break;
                     default:
                         // drop it
                         break;
@@ -149,7 +165,15 @@ namespace RazorEnhanced
                     return;
                 }
             }
-
+            foreach (ScriptItem item in RceScripts)
+            {
+                if (item.Hotkey == key)
+                {
+                    item.Hotkey = Keys.None;
+                    item.HotKeyPass = true;
+                    return;
+                }
+            }
         }
 
         internal static void UpdateScriptKey(string name, Keys key, bool passkey)
@@ -173,6 +197,15 @@ namespace RazorEnhanced
                 }
             }
             foreach (Scripts.ScriptItem item in Scripts.CsScripts)
+            {
+                if (item.Filename.Equals(name, StringComparison.OrdinalIgnoreCase))
+                {
+                    item.Hotkey = key;
+                    item.HotKeyPass = passkey;
+                    break;
+                }
+            }
+            foreach (Scripts.ScriptItem item in Scripts.RceScripts)
             {
                 if (item.Filename.Equals(name, StringComparison.OrdinalIgnoreCase))
                 {
@@ -224,6 +257,11 @@ namespace RazorEnhanced
                 if (item.Hotkey == key)
                     return true;
             }
+            foreach (Scripts.ScriptItem item in Scripts.RceScripts)
+            {
+                if (item.Hotkey == key)
+                    return true;
+            }
             return false;
         }
 
@@ -240,6 +278,11 @@ namespace RazorEnhanced
                     return item;
             }
             foreach (Scripts.ScriptItem item in Scripts.CsScripts)
+            {
+                if (item.Hotkey == key)
+                    return item;
+            }
+            foreach (Scripts.ScriptItem item in Scripts.RceScripts)
             {
                 if (item.Hotkey == key)
                     return item;
@@ -264,7 +307,11 @@ namespace RazorEnhanced
                 if (item.Filename.Equals(name, StringComparison.OrdinalIgnoreCase))
                     return item;
             }
-
+            foreach (Scripts.ScriptItem item in Scripts.RceScripts)
+            {
+                if (item.Filename.Equals(name, StringComparison.OrdinalIgnoreCase))
+                    return item;
+            }
             return null;
         }
 
@@ -293,6 +340,17 @@ namespace RazorEnhanced
                 }
             }
             foreach (ScriptItem item in CsScripts)
+            {
+                if (item.Filename.Equals(filename, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (item.FullPath == null)
+                    {
+                        item.FullPath = System.IO.Path.Combine(Engine.RootPath, "Scripts", filename);
+                    }
+                    return item.FullPath;
+                }
+            }
+            foreach (ScriptItem item in RceScripts)
             {
                 if (item.Filename.Equals(filename, StringComparison.OrdinalIgnoreCase))
                 {

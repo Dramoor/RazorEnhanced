@@ -9,6 +9,7 @@ enum ProtoLanguage {
     Python = 1;
     Csharp = 2;
     Uosteam = 3;
+    Razorce = 4;
 }
 
 enum ProtoMessageType {

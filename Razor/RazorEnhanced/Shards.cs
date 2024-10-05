@@ -110,10 +110,10 @@ namespace RazorEnhanced
             {
                 Shards.allShards = new AllShards();
                 Insert("OSI Ultima Online", String.Empty, String.Empty, String.Empty, "login.ultimaonline.com", 7776, true, true);
-                Insert("UO Demise", String.Empty, String.Empty, String.Empty, "login.uogdemise.com", 2593, true, false);
-                Insert("UO Eventine", String.Empty, String.Empty, String.Empty, "shard.uoeventine.com", 2593, true, false);
+                Insert("UO Demise", String.Empty, String.Empty, String.Empty, "login.uogdemise.com", 2593, true, false);    
                 Insert("UO Forever", String.Empty, String.Empty, String.Empty, "play.uoforever.com", 2599, true, false);
                 Insert("UO Wolvesbane", String.Empty, String.Empty, String.Empty, "play.wolvesbaneuo.com", 2593, true, false);
+                Insert("UO Eventine", String.Empty, String.Empty, String.Empty, "shard.uoeventine.com", 2593, true, false);
                 Shards.ShowLauncher = true;
             }
         }

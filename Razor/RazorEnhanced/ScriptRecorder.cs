@@ -24,6 +24,7 @@ namespace RazorEnhanced
                 case ScriptLanguage.PYTHON: return new PyScriptRecorder();
                 case ScriptLanguage.CSHARP: return new CsScriptRecorder();
                 case ScriptLanguage.UOSTEAM: return new UosScriptRecorder();
+                case ScriptLanguage.RAZORCE: return new RceScriptRecorder();
             }
         }
 
@@ -982,6 +983,382 @@ namespace RazorEnhanced
 
     }
 
+    public class RceScriptRecorder : ScriptRecorder
+    {
+        internal override void Record_AttackRequest(uint serial)
+        {
+            AddLog($"attack 0x{serial:x8}");
+        }
+
+        internal override void Record_ClientDoubleClick(Assistant.Serial ser)
+        {
+            base.Record_ClientDoubleClick(ser);
+            AddLog($"useobject 0x{ser.Value:x8}");
+        }
+
+        internal override void Record_DropRequest(Assistant.Item i, Assistant.Serial dest)
+        {
+            if (dest == Player.Backpack.Serial)
+            {
+                if (World.Player.LastWeaponLeft == i.Serial)
+                {
+                    AddLog("clearhands left");
+                    AddLog("pause 600");
+                    return;
+                }
+                if (World.Player.LastWeaponRight == i.Serial)
+                {
+                    AddLog("clearhands right");
+                    AddLog("pause 600");
+                    return;
+                }
+            }
+            if (dest != 0xFFFFFFFF)
+            {
+                if (dest == Player.Backpack.Serial)
+                {
+                    AddLog($"moveitem {i.Serial:x} backpack {i.Position.X} {i.Position.Y} {i.Amount}");
+                }
+                else
+                    AddLog($"moveitem {i.Serial:x} 0x{dest:x} {i.Position.X} {i.Position.Y} {i.Amount}");
+            }
+            else
+                AddLog($"moveitem {i.Serial:x} ground {i.Position.X} {i.Position.Y} {i.Position.Z} {i.Amount}");
+        }
+        /*internal static void Record_ClientSingleClick(Assistant.Serial ser)
+        {
+            int serint = ser;
+            if (ser.IsItem)
+                AddLog("Items.SingleClick(0x" + serint.ToString("X8") + ")");
+            else
+                AddLog("Mobiles.SingleClick(0x" + serint.ToString("X8") + ")");
+        }
+        */
+        internal override void Record_ClientTextCommand(int type, int id)
+        {
+            if (type == 1) // Use Skill
+            {
+                string skillName = string.Empty;
+                switch (id)
+                {
+                    case 2:
+                        skillName = "Animal Lore";
+                        break;
+
+                    case 3:
+                        skillName = "Item ID";
+                        break;
+
+                    case 4:
+                        skillName = "Arms Lore";
+                        break;
+
+                    case 6:
+                        skillName = "Begging";
+                        break;
+
+                    case 9:
+                        skillName = "Peacemaking";
+                        break;
+
+                    case 12:
+                        skillName = "Cartography";
+                        break;
+
+                    case 14:
+                        skillName = "Detect Hidden";
+                        break;
+
+                    case 15:
+                        skillName = "Discordance";
+                        break;
+
+                    case 16:
+                        skillName = "Eval Int";
+                        break;
+
+                    case 19:
+                        skillName = "Forensics";
+                        break;
+
+                    case 21:
+                        skillName = "Hiding";
+                        break;
+
+                    case 22:
+                        skillName = "Provocation";
+                        break;
+
+                    case 30:
+                        skillName = "Poisoning";
+                        break;
+
+                    case 32:
+                        skillName = "Spirit Speak";
+                        break;
+
+                    case 33:
+                        skillName = "Stealing";
+                        break;
+
+                    case 35:
+                        skillName = "Animal Taming";
+                        break;
+
+                    case 36:
+                        skillName = "Taste ID";
+                        break;
+
+                    case 38:
+                        skillName = "Tracking";
+                        break;
+
+                    case 46:
+                        skillName = "Meditation";
+                        break;
+
+                    case 47:
+                        skillName = "Stealth";
+                        break;
+
+                    case 48:
+                        skillName = "Remove Trap";
+                        break;
+
+                    case 23:
+                        skillName = "Inscribe";
+                        break;
+
+                    case 1:
+                        skillName = "Anatomy";
+                        break;
+
+                    default:
+                        break;
+                }
+                if (skillName != string.Empty)
+                    AddLog(string.Format("useskill \"{0}\"", skillName));
+
+            }
+            else if (type == 2) // Cast Spell
+            {
+                Spell s = Spell.Get(id);
+                if (s != null)
+                {
+
+                    if (id >= 1 && id <= 693)
+                        AddLog("cast \"" + Language.GetString(s.Name) + "\"");
+                    else if (id >= 701 && id <= 745)
+                    {
+                        if (id == 732)
+                            AddLog("cast \"Called Shot\"");
+                        else if (id == 715)
+                            AddLog("cast \"Enchanted Summoning\"");
+                        else
+                            AddLog("cast \"" + Language.GetString(s.Name) + "\"");
+                    }
+                    else
+                        AddLog("ERROR Spell not listed " + id);
+                }
+                else
+                    AddLog("ERROR Spell not known " + id);
+            }
+            else // InvokeVirtue
+            {
+                string virtue = string.Empty;
+                switch (id)
+                {
+                    case 1:
+                        virtue = "Honor";
+                        break;
+                    case 2:
+                        virtue = "Sacrifice";
+                        break;
+                    case 3:
+                        virtue = "Valor";
+                        break;
+                    case 4:
+                        virtue = "Compassion";
+                        break;
+                    case 5:
+                        virtue = "Honesty";
+                        break;
+                    case 6:
+                        virtue = "Humility";
+                        break;
+                    case 7:
+                        virtue = "Justice";
+                        break;
+                    case 8:
+                        virtue = "Spirituality";
+                        break;
+                }
+                if (virtue != string.Empty)
+                    AddLog("virtue \"" + virtue + "\"");
+            }
+
+        }
+
+        internal override void Record_EquipRequest(Assistant.Item item, Assistant.Layer l, Assistant.Mobile m)
+        {
+            if (m == World.Player)
+            {
+                AddLog($"equipitem {item.Serial:x8} {(int)l}");
+                AddLog($"pause 600");
+            }
+            else
+                AddLog($"unequipitem {l.ToString()}");
+        }
+
+        internal override void Record_RenameMobile(int serial, string name)
+        {
+            AddLog($"rename 0x{serial:x8} \"{name}\"");
+        }
+
+        internal override void Record_AsciiPromptResponse(uint type, string text)
+        {
+            //AddLog("waitforprompt 10000");
+            if (type == 0)
+                AddLog("waitforprompt 10000");
+            else
+                AddLog("promptmsg \"" + text + "\"");
+        }
+
+        internal override void Record_UnicodeSpeech(MessageType type, string text, int hue)
+        {
+            switch (type)
+            {
+                case MessageType.Guild:
+                    AddLog("guildmsg \"" + text + "\"");
+                    break;
+                case MessageType.Alliance:
+                    AddLog("allymsg \"" + text + "\"");
+                    break;
+                case MessageType.Emote:
+                    AddLog("emotemsg \"" + text + "\"");
+                    break;
+                case MessageType.Whisper:
+                    AddLog("whispermsg \"" + text + "\"");
+                    break;
+                case MessageType.Yell:
+                    AddLog("yellmsg \"" + text + "\"");
+                    break;
+                default:
+                    AddLog("msg \"" + text + "\"");
+                    break;
+            }
+        }
+
+        internal override void Record_GumpsResponse(uint id, int operation, Gumps.GumpData gd)
+        {
+            AddLog($"waitforgump 0x{id:x} 15000");
+            if (gd == null || (gd.switches.Count == 0 && gd.textID.Count == 0))
+            {
+                AddLog($"replygump 0x{id:x} {operation}");
+            }
+            else
+            {
+                string switchParam = String.Join(",", gd.switches);
+                string textIdParam = String.Join(",", gd.textID);
+                string textParam = String.Join(",", gd.text);
+                string parameters = $"\"{switchParam}\" \"{textIdParam}\" \"{textParam}\"";
+                AddLog($"replygump 0x{id:x} {operation} {parameters}");
+
+            }
+        }
+
+        internal override void Record_SADisarm()
+        {
+            AddLog("disarm");
+        }
+
+        internal override void Record_SAStun()
+        {
+            AddLog("stun");
+        }
+
+        internal override void Record_ContextMenuResponse(int serial, ushort idx)
+        {
+            AddLog($"waitforcontext 0x{serial:x8} {idx} 10000");
+        }
+
+        internal override void Record_ResponseStringQuery(byte yesno, string text)
+        {
+            AddLog("Misc.WaitForQueryString(10000)");
+            if (yesno != 0)
+                AddLog("Misc.QueryStringResponse(True, " + text + ")");
+            else
+                AddLog("Misc.QueryStringResponse(False, " + text + ")");
+        }
+
+        internal override void Record_MenuResponse(int index)
+        {
+            AddLog("Misc.WaitForMenu(10000)");
+            string text = string.Empty;
+            try
+            {
+                text = World.Player.MenuEntry[index - 1].ModelText;
+            }
+            catch { }
+            AddLog("Misc.MenuResponse(\"" + text + "\")");
+        }
+
+        internal override void Record_Movement(Direction dir)
+        {
+            if ((dir & Direction.running) == Direction.running)
+            {
+                switch (World.Player.Direction & Direction.mask)
+                {
+                    case Direction.north: AddLog("run \"North\""); break;
+                    case Direction.south: AddLog("run \"South\""); break;
+                    case Direction.west: AddLog("run \"West\""); break;
+                    case Direction.east: AddLog("run \"East\""); break;
+                    case Direction.right: AddLog("run \"Right\""); break;
+                    case Direction.left: AddLog("run \"Left\""); break;
+                    case Direction.down: AddLog("run \"Down\""); break;
+                    case Direction.up: AddLog("run \"Up\""); break;
+                    default: break;
+                }
+            }
+            else
+            {
+                switch (World.Player.Direction & Direction.mask)
+                {
+                    case Direction.north: AddLog("walk \"North\""); break;
+                    case Direction.south: AddLog("walk \"South\""); break;
+                    case Direction.west: AddLog("walk \"West\""); break;
+                    case Direction.east: AddLog("walk \"East\""); break;
+                    case Direction.right: AddLog("walk \"Right\""); break;
+                    case Direction.left: AddLog("walk \"Left\""); break;
+                    case Direction.down: AddLog("walk \"Down\""); break;
+                    case Direction.up: AddLog("walk \"Up\""); break;
+                    default: break;
+                }
+            }
+        }
+
+        internal override void Record_Target(TargetInfo info)
+        {
+            AddLog("waitfortarget 10000");
+            if (info.X == 0xFFFF && info.X == 0xFFFF && (info.Serial <= 0 || info.Serial >= 0x80000000))
+            {
+                AddLog("canceltarget");
+                return;
+            }
+
+            if (info.Serial == 0)
+            {
+                if (info.Gfx == 0)
+                    AddLog("targettile " + info.X + " " + info.Y + " " + info.Z);
+                else
+                    AddLog("targettile " + info.X + " " + info.Y + " " + info.Z + " " + info.Gfx);
+            }
+            else
+                AddLog("target 0x" + ((int)info.Serial).ToString("X8"));
+
+        }
+
+    }
     public class CsScriptRecorder : ScriptRecorder
     {
         // no recorder for CS yet

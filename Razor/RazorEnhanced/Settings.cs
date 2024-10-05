@@ -257,6 +257,13 @@ namespace RazorEnhanced
                 items.Add(item);
                 index++;
             }
+            index = 1;
+            foreach (Scripts.ScriptItem item in Scripts.RceScripts)
+            {
+                item.Position = index;
+                items.Add(item);
+                index++;
+            }
 
             string xml = Newtonsoft.Json.JsonConvert.SerializeObject(items, Newtonsoft.Json.Formatting.Indented);
             string hash = HashJsonNoWhitespace(xml);
@@ -4789,7 +4796,12 @@ namespace RazorEnhanced
                     Keys key = item.Hotkey;
                     retList.Add(new RazorEnhanced.HotKey.HotKeyData(name, key));
                 }
-
+                foreach (Scripts.ScriptItem item in Scripts.RceScripts)
+                {
+                    string name = item.Filename;
+                    Keys key = item.Hotkey;
+                    retList.Add(new RazorEnhanced.HotKey.HotKeyData(name, key));
+                }
                 return retList;
             }
 

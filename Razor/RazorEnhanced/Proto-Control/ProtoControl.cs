@@ -13,6 +13,7 @@ using IronPython.Runtime;
 using Microsoft.Scripting.Hosting.Providers;
 using Microsoft.Scripting.Hosting;
 using RazorEnhanced.UOS;
+using RazorEnhanced.RCE;
 using System.Text.RegularExpressions;
 using System.Collections.Concurrent;
 using IronPython.Runtime.Exceptions;
@@ -270,7 +271,46 @@ namespace RazorEnhanced
                                 Utility.Logger.Error($"Play UOS failed {ex}");
                             }
                     }
-                    
+                    break;
+                case ProtoLanguage.Razorce:
+                    {
+                        RazorCeEngine rceEngine = new();
+                        if (rceEngine != null)
+                            try
+                            {
+                                rceEngine.SetStderr(
+                                    async (string message) =>
+                                    {
+                                        message = message.TrimEnd(new char[] { '\r', '\n' });
+                                        OutputPlayMessage(message, true);
+                                    }
+                                );
+                                rceEngine.SetStdout(
+                                    async (string message) =>
+                                    {
+                                        message = message.TrimEnd(new char[] { '\r', '\n' });
+                                        OutputPlayMessage(message, true);
+                                    }
+                                );
+                                string combinedString = "";
+                                foreach (var statement in request.Commands)
+                                {
+                                    combinedString += statement.TrimEnd(new char[] { '\r', '\n' }) + "\n";
+                                }
+
+                                rceEngine.Load(combinedString, "");
+                                sessionData._playThread = new Thread(() => RunRCE(rceEngine));
+                                sessionData._playThread.Start();
+                                sessionData._playThread.Join();
+                                sessionData._playThread = null;
+
+                            }
+                            catch (Exception ex)
+                            {
+                                Utility.Logger.Error($"Play RCE failed {ex}");
+                            }
+                        OutputPlayMessage("", false);
+                    }
                     break;
                 default:
                     throw new OperationCanceledException();
@@ -348,6 +388,34 @@ namespace RazorEnhanced
             OutputPlayMessage(message, true);
         }
 
+        internal void RunRCE(RazorCeEngine engine)
+        {
+            string message = "";
+            try
+            {
+                engine.Execute();
+            }
+            catch (OperationCanceledException stop)
+            {
+                message = stop.Message;
+            }
+            catch (RCESyntaxError ex)
+            {
+                message = ex.Message;
+            }
+            catch (RCEStopError ex)
+            {
+                message = $"stop keyword encountered at line {ex.LineNumber + 1}";
+            }
+            catch (Exception ex)
+            {
+                message += "RCE Error:";
+                string error = ex.ToString();
+                message += Regex.Replace(error.Trim(), "\n\n", "\n");     //remove empty lines
+            }
+
+            OutputPlayMessage(message, true);
+        }
         public async Task StopPlay(StopPlayRequest request)
         {
             if (World.Player == null) return;
@@ -416,12 +484,15 @@ namespace RazorEnhanced
                 case ProtoLanguage.Csharp:
                     language = ScriptLanguage.CSHARP;
                     break;
+                case ProtoLanguage.Razorce:
+                    language = ScriptLanguage.RAZORCE;
+                    break;
                 default:
                     language = ScriptLanguage.UNKNOWN;
                     break;
             }
             Utility.Logger.Debug($"Started recording in {request.Language} format");
-            if (language == ScriptLanguage.PYTHON || language == ScriptLanguage.UOSTEAM)
+            if (language == ScriptLanguage.PYTHON || language == ScriptLanguage.UOSTEAM || language == ScriptLanguage.RAZORCE)
             {
                 SessionData sessionData =
                     new SessionData(request.Sessionid, ScriptRecorderService.RecorderForLanguage(language));

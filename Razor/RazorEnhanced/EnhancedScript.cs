@@ -5,6 +5,7 @@ using IronPython.Runtime.Exceptions;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Hosting.Providers;
+using RazorEnhanced.RCE;
 using RazorEnhanced.UOS;
 using System;
 using System.Collections.Concurrent;
@@ -26,6 +27,7 @@ namespace RazorEnhanced
         PYTHON,
         CSHARP,
         UOSTEAM,
+        RAZORCE
     }
     public class EnhancedScriptService
     {
@@ -52,6 +54,8 @@ namespace RazorEnhanced
         internal List<EnhancedScript> ScriptListTabPy() { return ScriptListTab().Where(script => script.Language == ScriptLanguage.PYTHON).ToList(); }
         internal List<EnhancedScript> ScriptListTabCs() { return ScriptListTab().Where(script => script.Language == ScriptLanguage.CSHARP).ToList(); }
         internal List<EnhancedScript> ScriptListTabUos() { return ScriptListTab().Where(script => script.Language == ScriptLanguage.UOSTEAM).ToList(); }
+        internal List<EnhancedScript> ScriptListTabRce() { return ScriptListTab().Where(script => script.Language == ScriptLanguage.RAZORCE).ToList(); }
+
 
         public event Action<EnhancedScript, bool> OnScriptListChanged;
 
@@ -175,6 +179,7 @@ namespace RazorEnhanced
                 case ".py": return ScriptLanguage.PYTHON;
                 case ".cs": return ScriptLanguage.CSHARP;
                 case ".uos": return ScriptLanguage.UOSTEAM;
+                case ".rce": return ScriptLanguage.RAZORCE;
                 default: return ScriptLanguage.UNKNOWN;
             }
         }
@@ -186,6 +191,7 @@ namespace RazorEnhanced
                 case ScriptLanguage.PYTHON: return ".py";
                 case ScriptLanguage.CSHARP: return ".cs";
                 case ScriptLanguage.UOSTEAM: return ".uos";
+                case ScriptLanguage.RAZORCE: return ".rce";
                 default: return ".txt";
             }
         }
@@ -734,11 +740,13 @@ namespace RazorEnhanced
         public PythonEngine pyEngine;
         public CSharpEngine csEngine;
         public UOSteamEngine uosEngine;
+        public RazorCeEngine rceEngine;
 
         public Assembly csProgram;
 
         private TracebackDelegate m_pyTraceback;
         private UOSTracebackDelegate m_uosTraceback;
+        private RCETracebackDelegate m_rceTraceback;
         private Action<string> m_stdoutWriter;
         private Action<string> m_stderrWriter;
 
@@ -864,6 +872,7 @@ namespace RazorEnhanced
                     case ScriptLanguage.PYTHON: m_Loaded = LoadPython(); break;
                     case ScriptLanguage.CSHARP: m_Loaded = LoadCSharp(); break;
                     case ScriptLanguage.UOSTEAM: m_Loaded = LoadUOSteam(); break;
+                    case ScriptLanguage.RAZORCE: m_Loaded = LoadRazorCE(); break;
                 }
             }
             catch (Exception ex)
@@ -896,6 +905,7 @@ namespace RazorEnhanced
                     case ScriptLanguage.PYTHON: result = RunPython(); break;
                     case ScriptLanguage.CSHARP: result = RunCSharp(); break;
                     case ScriptLanguage.UOSTEAM: result = RunUOSteam(); break;
+                    case ScriptLanguage.RAZORCE: result = RunRazorCE(); break;
                 }
             }
             catch (Exception ex)
@@ -992,6 +1002,18 @@ namespace RazorEnhanced
             SuspendCheck();
             return true;
         }
+
+        private bool TracebackRCE(RCE.RCECompiledScript script, RCE.ASTNode node, RCE.Scope scope)
+        {
+            if (m_rceTraceback != null)
+            {
+                return m_rceTraceback.Invoke(script, node, scope);
+            }
+            SuspendCheck();
+            return true;
+        }
+
+
         private void SuspendCheck()
         {
             if (Suspended) m_SuspendedMutex.WaitOne();
@@ -1124,6 +1146,81 @@ namespace RazorEnhanced
                 uosEngine.SetTrace(TracebackUOS);
 
                 uosEngine.Execute();
+            }
+            catch (Exception ex)
+            {
+                return HandleException(ex);
+            }
+            return true;
+        }
+
+        // ----------------------------------------- Razor CE ------------------------
+
+        private bool LoadRazorCE()
+        {
+            try
+            {
+                rceEngine = new RazorCeEngine();
+                // Using // only will be deprecated instead of //UOS
+
+                var content = m_Script.Text ?? "";
+                if (content == "" && File.Exists(m_Script.Fullpath))
+                {
+                    lock (IoLock)
+                    {
+                        content = ReadAllTextWithoutLocking(m_Script.Fullpath);
+                    }
+                }
+                if (content == null || content == "")
+                {
+                    return false;
+                }
+
+                /*
+                var text = System.IO.File.ReadAllLines(m_Script.Fullpath);
+                if ((text[0].Substring(0, 2) == "//") && text[0].Length < 5)
+                {
+                    string message = "WARNING: // header for UOS scripts is going to be deprecated. Please use //UOS instead";
+                    SendOutput(message);
+                }
+                */
+
+
+
+                rceEngine.SetStderr(
+                    (string message) =>
+                    {
+                        Misc.SendMessage(message, 178);
+                        if (m_stderrWriter == null) return;
+                        m_stderrWriter.Invoke(message);
+                    }
+                );
+
+                rceEngine.SetStdout(
+                    (string message) =>
+                    {
+                        Misc.SendMessage(message);
+                        if (m_stdoutWriter == null) return;
+                        m_stdoutWriter.Invoke(message);
+                    }
+                );
+
+
+                return rceEngine.Load(content, m_Script.Fullpath);
+            }
+            catch (Exception ex)
+            {
+                return HandleException(ex);
+            }
+        }
+
+        private bool RunRazorCE()
+        {
+            try
+            {
+                rceEngine.SetTrace(TracebackRCE);
+
+                rceEngine.Execute();
             }
             catch (Exception ex)
             {

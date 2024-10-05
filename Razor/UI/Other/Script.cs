@@ -68,6 +68,8 @@ namespace Assistant
             { list = Scripts.UosScripts; }
             else if (scriptListView.Name == "csScriptListView")
             { list = Scripts.CsScripts; }
+            else if (scriptListView.Name == "rceScriptListView")
+            { list = Scripts.RceScripts; }
 
             return list;
         }
@@ -154,6 +156,7 @@ namespace Assistant
             LoadScriptList(RazorEnhanced.Scripts.PyScripts, pyScriptListView);
             LoadScriptList(RazorEnhanced.Scripts.UosScripts, uosScriptListView);
             LoadScriptList(RazorEnhanced.Scripts.CsScripts, csScriptListView);
+            LoadScriptList(RazorEnhanced.Scripts.RceScripts, rceScriptListView);
 
             foreach (TabPage tabPage in scriptsTab.Controls)
             {
@@ -437,6 +440,8 @@ namespace Assistant
                 list = Scripts.UosScripts;
             if (scriptListView.Name == "csScriptListView")
                 list = Scripts.CsScripts;
+            if (scriptListView.Name == "rceScriptListView")
+                list = Scripts.RceScripts;
             if (list == null)
                 return;
 
@@ -472,6 +477,8 @@ namespace Assistant
                 list = Scripts.UosScripts;
             if (scriptListView.Name == "csScriptListView")
                 list = Scripts.CsScripts;
+            if (scriptListView.Name == "rceScriptListView")
+                list = Scripts.RceScripts;
             if (list == null)
                 return;
 
@@ -522,6 +529,11 @@ namespace Assistant
             {
                 list = Scripts.CsScripts;
                 openFileDialogscript.Filter += "*.cs;";
+            }
+            if (scriptListView.Name == "rceScriptListView")
+            {
+                list = Scripts.RceScripts;
+                openFileDialogscript.Filter += "*.rce;";
             }
             if (list == null)
                 return;
@@ -587,6 +599,8 @@ namespace Assistant
                 list = Scripts.UosScripts;
             if (scriptListView.Name == "csScriptListView")
                 list = Scripts.CsScripts;
+            if (scriptListView.Name == "rceScriptListView")
+                list = Scripts.RceScripts;
             if (list == null)
                 return;
 
@@ -707,6 +721,8 @@ namespace Assistant
                 scriptTable = Scripts.UosScripts;
             if (scriptListView.Name == "csScriptListView")
                 scriptTable = Scripts.CsScripts;
+            if (scriptListView.Name == "rceScriptListView")
+                scriptTable = Scripts.RceScripts;
             if (scriptTable == null)
                 return;
 
@@ -863,6 +879,8 @@ namespace Assistant
                     list = Scripts.UosScripts;
                 if (scriptListView.Name == "csScriptListView")
                     list = Scripts.CsScripts;
+                if (scriptListView.Name == "rceScriptListView")
+                    list = Scripts.RceScripts;
                 if (list == null)
                     return;
 
@@ -917,6 +935,8 @@ namespace Assistant
                     list = Scripts.UosScripts;
                 if (scriptListView.Name == "csScriptListView")
                     list = Scripts.CsScripts;
+                if (scriptListView.Name == "rceScriptListView")
+                    list = Scripts.RceScripts;
 
                 if (list == null || list.Count == 0) return;
 
@@ -967,6 +987,8 @@ namespace Assistant
                     list = Scripts.UosScripts;
                 if (scriptListView.Name == "csScriptListView")
                     list = Scripts.CsScripts;
+                if (scriptListView.Name == "rceScriptListView")
+                    list = Scripts.RceScripts;
 
                 if (list == null || list.Count == 0) return;
 
@@ -1020,6 +1042,8 @@ namespace Assistant
                     list = Scripts.UosScripts;
                 if (scriptListView.Name == "csScriptListView")
                     list = Scripts.CsScripts;
+                if (scriptListView.Name == "rceScriptListView")
+                    list = Scripts.RceScripts;
 
                 if (list == null || list.Count == 0) return;
 
