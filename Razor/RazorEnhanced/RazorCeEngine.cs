@@ -469,7 +469,7 @@ namespace RazorEnhanced.RCE
             m_Interpreter.RegisterCommandHandler("fly", FlyCommand);
             m_Interpreter.RegisterCommandHandler("land", LandCommand);
             m_Interpreter.RegisterCommandHandler("setability", SetAbility);
-            m_Interpreter.RegisterCommandHandler("attack", Attack);
+            m_Interpreter.RegisterCommandHandler("attack", Attack); //Attack by serial
             m_Interpreter.RegisterCommandHandler("clearhands", ClearHands);
             m_Interpreter.RegisterCommandHandler("clickobject", ClickObject);
             m_Interpreter.RegisterCommandHandler("bandageself", BandageSelf);
