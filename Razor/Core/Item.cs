@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace Assistant
 {
@@ -347,6 +348,148 @@ namespace Assistant
                 }
             }
             return null;
+        }
+
+        public List<Item> FindItemsById(TypeID id, bool recurse)
+        {
+            List<Item> items = new List<Item>();
+
+            for (int i = 0; i < m_Items.Count; i++)
+            {
+                Item item = m_Items[i];
+                if (item.TypeID == id)
+                {
+                    items.Add(item);
+                }
+
+                if (recurse)
+                {
+                    List<Item> recurseItems = item.FindItemsById(id, true);
+
+                    if (recurseItems.Count > 0)
+                    {
+                        items.AddRange(recurseItems);
+                    }
+                }
+            }
+
+            return items;
+        }
+
+        internal Item FindItemByName(TypeID id, bool recurse)
+        {
+            foreach (Item t in m_Items)
+            {
+                Item item = t;
+                if (item.TypeID == id)
+                {
+                    return item;
+                }
+                else if (recurse)
+                {
+                    item = item.FindItemByID(id, true);
+                    if (item != null)
+                        return item;
+                }
+            }
+            return null;
+        }
+
+
+        public List<Item> FindItemsByName(string name, bool recurse)
+        {
+            List<Item> items = new List<Item>();
+
+            foreach (Item i in m_Items)
+            {
+                if (i.TypeID.ItemData.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+                {
+                    items.Add(i);
+                }
+
+                if (recurse)
+                {
+                    List<Item> recurseItems = i.FindItemsByName(name, true);
+                    if (recurseItems.Count > 0)
+                    {
+                        items.AddRange(recurseItems);
+                    }
+                }
+            }
+
+            return items;
+        }
+
+
+        /// <summary>
+        /// Common logic for dclicktype and targettype to find items by name
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="backpack"></param>
+        /// <param name="inRange"></param>
+        /// <param name="hue"></param>
+        /// <returns></returns>
+        public static List<Item> GetItemsByName(string name, bool backpack, bool inRange, int hue)
+        {
+            List<Item> items = new List<Item>();
+
+            if (backpack && World.Player.Backpack != null) // search backpack only
+            {
+                //items.AddRange(World.Player.Backpack.FindItemsByName(name, true).Where(item => !Interpreter.CheckIgnored(item.Serial)));
+                items.AddRange(World.Player.Backpack.FindItemsByName(name, true));
+            }
+            else if (inRange) // inrange includes both backpack and within 2 tiles
+            {
+                items.AddRange(World.FindItemsByName(name).Where(item =>
+                    !item.IsInBank && (Utility.InRange(World.Player.Position, item.Position, 2) ||
+                                       item.RootContainer == World.Player)));
+            }
+            else
+            {
+                items.AddRange(World.FindItemsByName(name).Where(item => !item.IsInBank));
+            }
+
+            if (hue > -1)
+            {
+                items.RemoveAll(item => item.Hue != hue);
+            }
+
+            return items;
+        }
+
+        /// <summary>
+        /// Common logic for dclicktype and targettype to find items by id
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="backpack"></param>
+        /// <param name="inRange"></param>
+        /// <param name="hue"></param>
+        /// <returns></returns>
+        public static List<Item> GetItemsById(ushort id, bool backpack, bool inRange, int hue)
+        {
+            List<Item> items = new List<Item>();
+
+            if (backpack && World.Player.Backpack != null)
+            {
+                items.AddRange(World.Player.Backpack.FindItemsById(id, true));
+            }
+            else if (inRange)
+            {
+                items.AddRange(World.FindItemsById(id).Where(item =>
+                    !item.IsInBank && (Utility.InRange(World.Player.Position, item.Position, 2) ||
+                                                                              item.RootContainer == World.Player)));
+            }
+            else
+            {
+                items.AddRange(World.FindItemsById(id).Where(item => !item.IsInBank));
+            }
+
+            if (hue > -1)
+            {
+                items.RemoveAll(item => item.Hue != hue);
+            }
+
+            return items;
         }
 
         internal object Container

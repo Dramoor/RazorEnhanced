@@ -1814,8 +1814,6 @@ namespace RazorEnhanced
             }
         }
 
-
-
         // Single Click
         /// <summary>
         /// Send a single click network event to the server.

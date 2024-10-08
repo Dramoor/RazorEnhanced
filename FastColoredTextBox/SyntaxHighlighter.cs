@@ -25,6 +25,9 @@ namespace FastColoredTextBoxNS
         public readonly Style CrimsonStyle = new TextStyle(Brushes.Crimson, null, FontStyle.Regular);
         public readonly Style DarkOrangeStyle = new TextStyle(Brushes.DarkOrange, null, FontStyle.Regular);
         public readonly Style DodgerBlueStyle = new TextStyle(Brushes.DodgerBlue, null, FontStyle.Regular);
+        public readonly Style LimeGreenStyle = new TextStyle(Brushes.LimeGreen, null, FontStyle.Bold);
+        public readonly Style PurpleStyle = new TextStyle(Brushes.Purple, null, FontStyle.Bold);
+        public readonly Style DarkSlateBlueStyle = new TextStyle(Brushes.DarkSlateBlue, null, FontStyle.Bold);
         //
         protected readonly Dictionary<string, SyntaxDescriptor> descByXMLfileNames =
             new Dictionary<string, SyntaxDescriptor>();
@@ -710,11 +713,11 @@ namespace FastColoredTextBoxNS
                     FunctionsStyle = MaroonStyle;
                     break;
                 case Language.Rce:
-                    StringStyle = GreenStyle;
+                    StringStyle = LimeGreenStyle;
                     CommentStyle = GrayStyle;
-                    NumberStyle = BlackStyle;
-                    KeywordStyle = BlueStyle;
-                    FunctionsStyle = MaroonStyle;
+                    NumberStyle = PurpleStyle;
+                    KeywordStyle = DarkSlateBlueStyle;
+                    FunctionsStyle = DarkSlateBlueStyle;
                     break;
                 case Language.Lua:
                     StringStyle = BrownStyle;

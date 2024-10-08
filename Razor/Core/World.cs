@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Ultima;
@@ -43,6 +44,44 @@ namespace Assistant
                     items.Add(item);
             }
             return items;
+        }
+
+        internal static List<Item> FindItemsByName(string name)
+        {
+            List<Item> items = new List<Item>();
+
+            foreach (KeyValuePair<Serial, Item> item in m_Items)
+            {
+                if (item.Value.TypeID.ItemData.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+                    items.Add(item.Value);
+            }
+
+            return items;
+        }
+
+        internal static List<Item> FindItemsById(ushort id)
+        {
+            List<Item> items = new List<Item>();
+
+            foreach (KeyValuePair<Serial, Item> item in m_Items)
+            {
+                if (item.Value.TypeID == id)
+                    items.Add(item.Value);
+            }
+
+            return items;
+        }
+
+        internal static List<Mobile> FindMobilesByName(string name)
+        {
+            List<Mobile> mobiles = new List<Mobile>();
+            foreach (KeyValuePair<Serial, Mobile> item in m_Mobiles)
+            {
+                if (item.Value.Name.IndexOf(name, StringComparison.OrdinalIgnoreCase) != -1)
+                    mobiles.Add(item.Value);
+            }
+
+            return mobiles;
         }
 
 

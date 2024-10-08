@@ -15,10 +15,13 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Web.UI.WebControls;
+using System.Windows.Controls;
 using System.Windows.Forms;
+using System.Windows.Interop;
+using Ultima;
 using WebSocketSharp;
-using static IronPython.Modules.PythonIterTools;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxTokenParser;
+using static RazorEnhanced.Settings;
 
 namespace RazorEnhanced.RCE
 {
@@ -465,15 +468,90 @@ namespace RazorEnhanced.RCE
 
         private void RegisterCommands()
         {
+            #region commands
+            // Commands based on Actions.cs
+            Interpreter.RegisterCommandHandler("attack", Attack); //Attack by serial
+            Interpreter.RegisterCommandHandler("cast", Cast); //BookcastAction, etc
+
+            // Dress
+            Interpreter.RegisterCommandHandler("dress", Dress); //DressAction
+            Interpreter.RegisterCommandHandler("undress", Undress); //UndressAction
+
+            // Using stuff
+            Interpreter.RegisterCommandHandler("dclicktype", DClickType); // DoubleClickTypeAction
+            Interpreter.RegisterCommandHandler("dclick", DClick); //DoubleClickAction
+
+            Interpreter.RegisterCommandHandler("usetype", UseType); // DoubleClickTypeAction
+            Interpreter.RegisterCommandHandler("useobject", UseObject); //DoubleClickAction
+
+            // Moving stuff
+            Interpreter.RegisterCommandHandler("drop", DropItem); //DropAction
+            Interpreter.RegisterCommandHandler("droprelloc", DropRelLoc); //DropAction
+            Interpreter.RegisterCommandHandler("lift", LiftItem); //LiftAction
+            Interpreter.RegisterCommandHandler("lifttype", LiftType); //LiftTypeAction
+
+            // Gump
+            Interpreter.RegisterCommandHandler("waitforgump", WaitForGump); // WaitForGumpAction
+            Interpreter.RegisterCommandHandler("gumpresponse", GumpResponse); // GumpResponseAction
+            Interpreter.RegisterCommandHandler("gumpclose", GumpClose); // GumpResponseAction
+
+            // Menu
+            Interpreter.RegisterCommandHandler("menu", ContextMenu); //ContextMenuAction
+            Interpreter.RegisterCommandHandler("contextmenu", ContextMenu); //ContextMenuAction
+            Interpreter.RegisterCommandHandler("menuresponse", MenuResponse); //MenuResponseAction
+            Interpreter.RegisterCommandHandler("waitformenu", WaitForMenu); //WaitForMenuAction
+
+            // Prompt
+            Interpreter.RegisterCommandHandler("promptresponse", PromptResponse); //PromptAction
+            Interpreter.RegisterCommandHandler("waitforprompt", WaitForPrompt); //WaitForPromptAction
+            Interpreter.RegisterCommandHandler("cancelprompt", CancelPrompt); //CancelPrompt added in from uosteam settings.
+
+            // Hotkey execution
+            Interpreter.RegisterCommandHandler("hotkey", Hotkey); //HotKeyAction Not implemented yet.
+
+
+            // Messages executions
+            Interpreter.RegisterCommandHandler("overhead", OverheadMessage); //OverheadMessageAction
+            Interpreter.RegisterCommandHandler("headmsg", OverheadMessage); //OverheadMessageAction
+            Interpreter.RegisterCommandHandler("sysmsg", SystemMessage); //SystemMessageAction
+            Interpreter.RegisterCommandHandler("clearsysmsg", ClearSysMsg); //SystemMessageAction
+            Interpreter.RegisterCommandHandler("clearjournal", ClearSysMsg); //SystemMessageAction
+
+            // General Waits/Pauses
+            Interpreter.RegisterCommandHandler("wait", Pause); //PauseAction
+            Interpreter.RegisterCommandHandler("pause", Pause); //PauseAction
+            Interpreter.RegisterCommandHandler("waitforsysmsg", WaitForSysMsg);
+            Interpreter.RegisterCommandHandler("wfsysmsg", WaitForSysMsg);
+
+
+
+
+
+
+            #endregion
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            #region uosteam stuff
+
             // Commands. From RCEteam Documentation
             m_Interpreter.RegisterCommandHandler("fly", FlyCommand);
             m_Interpreter.RegisterCommandHandler("land", LandCommand);
             m_Interpreter.RegisterCommandHandler("setability", SetAbility);
-            m_Interpreter.RegisterCommandHandler("attack", Attack); //Attack by serial
             m_Interpreter.RegisterCommandHandler("clearhands", ClearHands);
             m_Interpreter.RegisterCommandHandler("clickobject", ClickObject);
             m_Interpreter.RegisterCommandHandler("bandageself", BandageSelf);
-            //m_Interpreter.RegisterCommandHandler("useobject", UseObject);
             m_Interpreter.RegisterCommandHandler("useonce", UseOnce);
             m_Interpreter.RegisterCommandHandler("clearusequeue", CleanUseQueue);
             m_Interpreter.RegisterCommandHandler("moveitem", MoveItem);
@@ -500,8 +578,6 @@ namespace RazorEnhanced.RCE
             m_Interpreter.RegisterCommandHandler("restock", Restock);
             m_Interpreter.RegisterCommandHandler("autoloot", Autoloot); //TODO: This method is a stub. Remove after successful testing.
             m_Interpreter.RegisterCommandHandler("autotargetobject", AutoTargetObject);
-            m_Interpreter.RegisterCommandHandler("dress", Dress);
-            m_Interpreter.RegisterCommandHandler("undress", Undress);
             m_Interpreter.RegisterCommandHandler("dressconfig", DressConfig); // I can't tell what this is intended to do in RCE
             m_Interpreter.RegisterCommandHandler("toggleautoloot", ToggleAutoloot);
             m_Interpreter.RegisterCommandHandler("togglescavenger", ToggleScavenger);
@@ -509,10 +585,7 @@ namespace RazorEnhanced.RCE
             m_Interpreter.RegisterCommandHandler("unsetalias", UnSetAlias);
             m_Interpreter.RegisterCommandHandler("setalias", SetAlias);
             m_Interpreter.RegisterCommandHandler("promptalias", PromptAlias);
-            m_Interpreter.RegisterCommandHandler("waitforgump", WaitForGump);
-            m_Interpreter.RegisterCommandHandler("replygump", ReplyGump);
-            m_Interpreter.RegisterCommandHandler("closegump", CloseGump); // kind of done, RE can't do paperdolls ...
-            m_Interpreter.RegisterCommandHandler("clearjournal", ClearJournal);
+
             m_Interpreter.RegisterCommandHandler("waitforjournal", WaitForJournal);
             m_Interpreter.RegisterCommandHandler("poplist", PopList);
             m_Interpreter.RegisterCommandHandler("pushlist", PushList);
@@ -520,13 +593,11 @@ namespace RazorEnhanced.RCE
             m_Interpreter.RegisterCommandHandler("createlist", CreateList);
             m_Interpreter.RegisterCommandHandler("clearlist", ClearList);
             m_Interpreter.RegisterCommandHandler("info", Info);
-            m_Interpreter.RegisterCommandHandler("pause", Pause);
             m_Interpreter.RegisterCommandHandler("ping", Ping);
             m_Interpreter.RegisterCommandHandler("playmacro", PlayMacro);
             m_Interpreter.RegisterCommandHandler("playsound", PlaySound);
             m_Interpreter.RegisterCommandHandler("resync", Resync);
             m_Interpreter.RegisterCommandHandler("snapshot", Snapshot);
-            m_Interpreter.RegisterCommandHandler("hotkeys", Hotkeys); //toggles hot keys .. not going to implement
             m_Interpreter.RegisterCommandHandler("where", Where);
             m_Interpreter.RegisterCommandHandler("messagebox", MessageBox);
             m_Interpreter.RegisterCommandHandler("mapuo", MapUO); // not going to implement
@@ -538,23 +609,18 @@ namespace RazorEnhanced.RCE
             m_Interpreter.RegisterCommandHandler("logoutbutton", LogoutButton);
             m_Interpreter.RegisterCommandHandler("virtue", Virtue);
             m_Interpreter.RegisterCommandHandler("msg", MsgCommand);
-            m_Interpreter.RegisterCommandHandler("headmsg", HeadMsg);
             m_Interpreter.RegisterCommandHandler("partymsg", PartyMsg);
             m_Interpreter.RegisterCommandHandler("guildmsg", GuildMsg);
             m_Interpreter.RegisterCommandHandler("allymsg", AllyMsg);
             m_Interpreter.RegisterCommandHandler("whispermsg", WhisperMsg);
             m_Interpreter.RegisterCommandHandler("yellmsg", YellMsg);
-            m_Interpreter.RegisterCommandHandler("sysmsg", SysMsg);
             m_Interpreter.RegisterCommandHandler("chatmsg", ChatMsg);
             m_Interpreter.RegisterCommandHandler("emotemsg", EmoteMsg);
-            m_Interpreter.RegisterCommandHandler("promptmsg", PromptMsg);
             m_Interpreter.RegisterCommandHandler("timermsg", TimerMsg);
-            m_Interpreter.RegisterCommandHandler("waitforprompt", WaitForPrompt);
-            m_Interpreter.RegisterCommandHandler("cancelprompt", CancelPrompt);
+
             m_Interpreter.RegisterCommandHandler("addfriend", AddFriend); //not so much
             m_Interpreter.RegisterCommandHandler("removefriend", RemoveFriend); // not implemented, use the gui
-            m_Interpreter.RegisterCommandHandler("contextmenu", ContextMenu);
-            m_Interpreter.RegisterCommandHandler("waitforcontext", WaitForContext);
+
             m_Interpreter.RegisterCommandHandler("ignoreobject", IgnoreObject);
             m_Interpreter.RegisterCommandHandler("clearignorelist", ClearIgnoreList);
             m_Interpreter.RegisterCommandHandler("setskill", SetSkill);
@@ -563,7 +629,6 @@ namespace RazorEnhanced.RCE
             m_Interpreter.RegisterCommandHandler("waitforcontents", WaitForContents);
             m_Interpreter.RegisterCommandHandler("miniheal", MiniHeal);
             m_Interpreter.RegisterCommandHandler("bigheal", BigHeal);
-            m_Interpreter.RegisterCommandHandler("cast", Cast);
             m_Interpreter.RegisterCommandHandler("chivalryheal", ChivalryHeal);
             m_Interpreter.RegisterCommandHandler("waitfortarget", WaitForTarget);
             m_Interpreter.RegisterCommandHandler("canceltarget", CancelTarget);
@@ -585,8 +650,10 @@ namespace RazorEnhanced.RCE
             m_Interpreter.RegisterCommandHandler("namespace", ManageNamespaces); //TODO: add "transformations" list
             m_Interpreter.RegisterCommandHandler("script", ManageScripts); //TODO: add "transformations" list
 
+
+
             // Expressions
-            m_Interpreter.RegisterExpressionHandler("usetype", UseType);
+
             m_Interpreter.RegisterExpressionHandler("movetype", MoveType);
 
             m_Interpreter.RegisterExpressionHandler("findalias", FindAlias);
@@ -603,7 +670,7 @@ namespace RazorEnhanced.RCE
             m_Interpreter.RegisterExpressionHandler("skillbase", SkillBase);
             m_Interpreter.RegisterExpressionHandler("findobject", FindObject);
             m_Interpreter.RegisterExpressionHandler("amount", Amount);
-            m_Interpreter.RegisterExpressionHandler("useobject", UseObjExp);
+
             m_Interpreter.RegisterExpressionHandler("distance", Distance);
             m_Interpreter.RegisterExpressionHandler("graphic", Graphic);
             m_Interpreter.RegisterExpressionHandler("inrange", InRange);
@@ -678,7 +745,7 @@ namespace RazorEnhanced.RCE
 
             m_Interpreter.RegisterExpressionHandler("bandage", Bandage);
             m_Interpreter.RegisterExpressionHandler("color", Color);
-
+            #endregion
             // Object attributes
         }
 
@@ -794,14 +861,10 @@ namespace RazorEnhanced.RCE
             return false;
         }
 
-        /// <summary>
-        /// useobject (serial)
-        /// </summary>
-        private IComparable UseObjExp(ASTNode node, Argument[] args, bool quiet)
-        {
-            UseObject(node, args, quiet, false);
-            return true;
-        }
+
+
+
+
 
         /// <summary>
         /// findalias ('alias name')
@@ -2231,6 +2294,1027 @@ namespace RazorEnhanced.RCE
 
         #region Commands
 
+        /// <summary>
+        /// attack (serial)
+        /// </summary>
+        private static bool Attack(ASTNode node, Argument[] args, bool quiet, bool force)
+        {
+            if (args.Length == 0)
+            {
+                throw new RCERuntimeError(node, "Usage: attack (serial)");
+            }
+
+            uint serial = args[0].AsSerial();
+            Mobile mobile = Mobiles.FindBySerial((int)serial);
+            Item item = Items.FindBySerial((int)serial);
+            if (mobile != null || item != null)
+                Player.Attack((int)serial);
+
+            return true;
+        }
+
+        /// <summary>
+        /// cast (spell id/'spell name'/'last') [serial]
+        /// </summary>
+        private bool Cast(ASTNode node, Argument[] args, bool quiet, bool force)
+        {
+            if (args.Length == 1)
+            {
+                string spell = args[0].AsString();
+                Spells.Cast(spell);
+            }
+            else if (args.Length == 2)
+            {
+                string spell = args[0].AsString();
+                uint serial = args[1].AsSerial();
+                Spells.Cast(spell, serial);
+            }
+            else
+            {
+                SendError("Usage: cast (spell id/'spell name'/'last') [serial]");
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// dress ['profile name']
+        /// </summary>
+        private bool Dress(ASTNode node, Argument[] args, bool quiet, bool force)
+        {
+
+            if (args.Length == 1)
+            {
+                string dressListName = args[0].AsString();
+                if (Settings.Dress.ListExists(dressListName))
+                {
+                    RazorEnhanced.Dress.ChangeList(dressListName);
+                }
+                else
+                {
+                    SendError(String.Format("Dress List {0} does not exist", dressListName));
+                }
+            }
+            RazorEnhanced.Dress.DressFStart();
+            while (RazorEnhanced.Dress.DressStatus())
+            {
+                Misc.Pause(100);
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// undress ['profile name']
+        /// </summary>
+        private bool Undress(ASTNode node, Argument[] args, bool quiet, bool force)
+        {
+
+            if (args.Length == 1)
+            {
+                string unDressListName = args[0].AsString();
+                if (Settings.Dress.ListExists(unDressListName))
+                {
+                    RazorEnhanced.Dress.ChangeList(unDressListName);
+                }
+                else
+                {
+                    SendError(String.Format("UnDress List {0} does not exist", unDressListName));
+                }
+            }
+            RazorEnhanced.Dress.UnDressFStart();
+            while (RazorEnhanced.Dress.UnDressStatus())
+            {
+                Misc.Pause(100);
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// usetype ('name of item'/'graphicID') [inrangecheck (true/false)/backpack] [hue]
+        /// </summary>
+        private bool UseType(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            if (vars.Length == 0)
+            {
+                throw new RCERuntimeError(node, "Usage: usetype ('name of item'/'graphicID') [inrangecheck (true/false)/backpack] [hue]");
+            }
+
+            string gfxStr = vars[0].AsString();
+            Serial gfx = Utility.ToInt32(gfxStr, 0);
+            List<Assistant.Item> items;
+            List<Assistant.Mobile> mobiles = new List<Assistant.Mobile>();
+
+            bool inRangeCheck = false;
+            bool backpack = false;
+            int hue = -1;
+
+            if (vars.Length > 1)
+            {
+                if (vars.Length == 3)
+                {
+                    hue = vars[2].AsInt();
+                }
+
+                if (vars[1].AsString().IndexOf("pack", StringComparison.OrdinalIgnoreCase) > 0)
+                {
+                    backpack = true;
+                }
+                else
+                {
+                    inRangeCheck = vars[1].AsBool();
+                }
+            }
+
+            // No graphic id, maybe searching by name?
+            if (gfx == 0)
+            {
+                items = Assistant.Item.GetItemsByName(gfxStr, backpack, inRangeCheck, hue);
+
+                if (items.Count == 0) // no item found, search mobile by name
+                {
+                    mobiles = Mobiles.GetMobilesByName(gfxStr, inRangeCheck);
+                }
+            }
+            else // Provided graphic id for type, check backpack first (same behavior as DoubleClickAction in macros
+            {
+                ushort id = Utility.ToUInt16(gfxStr, 0);
+
+                items = Assistant.Item.GetItemsById(id, backpack, inRangeCheck, hue);
+
+                // Still no item? Mobile check!
+                if (items.Count == 0)
+                {
+                    mobiles = Mobiles.GetMobilesById(id, inRangeCheck);
+                }
+            }
+
+            if (items.Count > 0)
+            {
+                PlayerData.DoubleClick(items[Utility.Random(items.Count)].Serial);
+            }
+            else if (mobiles.Count > 0)
+            {
+                PlayerData.DoubleClick(mobiles[Utility.Random(mobiles.Count)].Serial);
+            }
+            else
+            {
+                if (!quiet)
+                    SendError($"Item or mobile type '{gfxStr}' not found");
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// dclicktype ('name of item'/'graphicID') [inrangecheck (true/false)/backpack] [hue]
+        /// </summary>
+        private bool DClickType(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            if (vars.Length == 0)
+            {
+                throw new RCERuntimeError(node, "Usage: dclicktype ('name of item'/'graphicID') [inrangecheck (true/false)/backpack] [hue]");
+            }
+
+            string gfxStr = vars[0].AsString();
+            Serial gfx = Utility.ToInt32(gfxStr, 0);
+            List<Assistant.Item> items;
+            List<Assistant.Mobile> mobiles = new List<Assistant.Mobile>();
+
+            bool inRangeCheck = false;
+            bool backpack = false;
+            int hue = -1;
+
+            if (vars.Length > 1)
+            {
+                if (vars.Length == 3)
+                {
+                    hue = vars[2].AsInt();
+                }
+
+                if (vars[1].AsString().IndexOf("pack", StringComparison.OrdinalIgnoreCase) > 0)
+                {
+                    backpack = true;
+                }
+                else
+                {
+                    inRangeCheck = vars[1].AsBool();
+                }
+            }
+
+            // No graphic id, maybe searching by name?
+            if (gfx == 0)
+            {
+                items = Assistant.Item.GetItemsByName(gfxStr, backpack, inRangeCheck, hue);
+
+                if (items.Count == 0) // no item found, search mobile by name
+                {
+                    mobiles = Mobiles.GetMobilesByName(gfxStr, inRangeCheck);
+                }
+            }
+            else // Provided graphic id for type, check backpack first (same behavior as DoubleClickAction in macros
+            {
+                ushort id = Utility.ToUInt16(gfxStr, 0);
+
+                items = Assistant.Item.GetItemsById(id, backpack, inRangeCheck, hue);
+
+                // Still no item? Mobile check!
+                if (items.Count == 0)
+                {
+                    mobiles = Mobiles.GetMobilesById(id, inRangeCheck);
+                }
+            }
+
+            if (items.Count > 0)
+            {
+                PlayerData.DoubleClick(items[Utility.Random(items.Count)].Serial);
+            }
+            else if (mobiles.Count > 0)
+            {
+                PlayerData.DoubleClick(mobiles[Utility.Random(mobiles.Count)].Serial);
+            }
+            else
+            {
+                if (!quiet)
+                    SendError($"Item or mobile type '{gfxStr}' not found");
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// useobject (serial)
+        /// </summary>
+        private static bool UseObject(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            if (vars.Length == 0)
+            {
+                throw new RCERuntimeError(node, "Usage: useobject (serial) or dclick ('left'/'right'/'hands')");
+            }
+
+            Item item;
+
+
+
+            switch (vars[0].AsString())
+            {
+                case "left":
+                    item = Player.GetItemOnLayer("LeftHand");
+                    break;
+                case "right":
+                    item = Player.GetItemOnLayer("RightHand");
+                    break;
+                default:
+                    item = Player.GetItemOnLayer("RightHand") ?? Player.GetItemOnLayer("LeftHand");
+                    break;
+            }
+
+            if (item != null)
+            {
+                PlayerData.DoubleClick(item);
+            }
+            else
+            {
+                Serial serial = vars[0].AsSerial();
+
+                if (!serial.IsValid)
+                {
+                    throw new RCERuntimeError(node, "useobject - invalid serial");
+                }
+
+                PlayerData.DoubleClick(serial);
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// dclick (serial) or dclick ('left'/'right'/'hands')
+        /// </summary>
+        private static bool DClick(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            if (vars.Length == 0)
+            {
+                throw new RCERuntimeError(node, "Usage: dclick (serial) or dclick ('left'/'right'/'hands')");
+            }
+
+            Item item;
+
+
+
+            switch (vars[0].AsString())
+            {
+                case "left":
+                    item = Player.GetItemOnLayer("LeftHand");
+                    break;
+                case "right":
+                    item = Player.GetItemOnLayer("RightHand");
+                    break;
+                default:
+                    item = Player.GetItemOnLayer("RightHand") ?? Player.GetItemOnLayer("LeftHand");
+                    break;
+            }
+
+            if (item != null)
+            {
+                PlayerData.DoubleClick(item);
+            }
+            else
+            {
+                Serial serial = vars[0].AsSerial();
+
+                if (!serial.IsValid)
+                {
+                    throw new RCERuntimeError(node, "dclick - invalid serial");
+                }
+
+                PlayerData.DoubleClick(serial);
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// drop (serial) (x y z/layername)
+        /// </summary>
+        private bool DropItem(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            if (vars.Length < 1)
+            {
+                throw new RCERuntimeError(node, "Usage: drop (serial) (x y z/layername)");
+            }
+
+            Assistant.Serial serial = vars[0].AsString().IndexOf("ground", StringComparison.OrdinalIgnoreCase) > 0
+                ? uint.MaxValue
+                : vars[0].AsSerial();
+
+            Assistant.Point3D to = new Assistant.Point3D(0, 0, 0);
+            Layer layer = Layer.Invalid;
+
+            switch (vars.Length)
+            {
+                case 1: // drop at feet if only serial is provided
+                    to = new Assistant.Point3D(World.Player.Position.X, World.Player.Position.Y, World.Player.Position.Z);
+                    break;
+                case 2: // dropping on a layer
+                    layer = (Layer)Enum.Parse(typeof(Layer), vars[1].AsString(), true);
+                    break;
+                case 3: // x y
+                    to = new Assistant.Point3D(Utility.ToInt32(vars[1].AsString(), 0), Utility.ToInt32(vars[2].AsString(), 0), 0);
+                    break;
+                case 4: // x y z
+                    to = new Assistant.Point3D(Utility.ToInt32(vars[1].AsString(), 0), Utility.ToInt32(vars[2].AsString(), 0),
+                        Utility.ToInt32(vars[3].AsString(), 0));
+                    break;
+            }
+
+            if (Assistant.DragDropManager.Holding != null)
+            {
+                if (layer > Layer.Invalid && layer <= Layer.LastUserValid)
+                {
+                    Assistant.Mobile m = World.FindMobile(serial);
+                    if (m != null)
+                        Assistant.DragDropManager.Drop(Assistant.DragDropManager.Holding, m, layer);
+                }
+                else
+                {
+                    Assistant.DragDropManager.Drop(Assistant.DragDropManager.Holding, serial, to);
+                }
+            }
+            else
+            {
+                SendError("Not holding anything");
+                
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// droprelloc (x) (y)
+        /// </summary>
+        private bool DropRelLoc(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            if (vars.Length < 2)
+            {
+                throw new RCERuntimeError(node, "Usage: droprelloc (x) (y)");
+            }
+
+            int x = vars[0].AsInt();
+            int y = vars[1].AsInt();
+
+            if (Assistant.DragDropManager.Holding != null)
+            {
+                Assistant.DragDropManager.Drop(Assistant.DragDropManager.Holding, null,
+                    new Assistant.Point3D((ushort)(World.Player.Position.X + x),
+                        (ushort)(World.Player.Position.Y + y), World.Player.Position.Z));
+            }
+            else
+            {
+                SendError("Not holding anything");
+            }
+
+            return true;
+        }
+
+        private static int _lastLiftId;
+        /// <summary>
+        /// lift (serial) [amount] [timeout]
+        /// </summary>
+        private bool LiftItem(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            if (vars.Length < 1)
+            {
+                throw new RCERuntimeError(node, "Usage: lift (serial) [amount] [timeout]");
+            }
+
+            Serial serial = vars[0].AsSerial();
+
+            if (!serial.IsValid)
+            {
+                throw new RCERuntimeError(node, "lift - Invalid serial");
+            }
+
+            ushort amount = 1;
+
+            if (vars.Length == 2)
+            {
+                amount = Utility.ToUInt16(vars[1].AsString(), 1);
+            }
+
+            long timeout = 30000;
+
+            if (vars.Length == 3)
+            {
+                timeout = Utility.ToLong(vars[2].AsString(), 30000);
+            }
+
+            if (_lastLiftId > 0)
+            {
+                if (Assistant.DragDropManager.LastIDLifted == _lastLiftId)
+                {
+                    _lastLiftId = 0;
+                    Interpreter.ClearTimeout();
+                    return true;
+                }
+
+                Interpreter.Timeout(timeout, () =>
+                {
+                    _lastLiftId = 0;
+                    return true;
+                });
+            }
+            else
+            {
+                Assistant.Item item = World.FindItem(serial);
+
+                if (item != null)
+                {
+                    _lastLiftId = Assistant.DragDropManager.Drag(item, amount <= item.Amount ? amount : item.Amount);
+                }
+                else
+                {
+                    SendError("Item not found or out of range");
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static int _lastLiftTypeId;
+        /// <summary>
+        /// lifttype (gfx/'name of item') [amount] [hue]
+        /// </summary>
+        private bool LiftType(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            if (vars.Length < 1)
+            {
+                throw new RCERuntimeError(node, "Usage: lifttype (gfx/'name of item') [amount] [hue]");
+            }
+
+            string gfxStr = vars[0].AsString();
+            ushort gfx = Utility.ToUInt16(gfxStr, 0);
+            ushort amount = 1;
+            int hue = -1;
+
+            if (vars.Length > 1)
+            {
+                if (vars.Length >= 2)
+                {
+                    amount = Utility.ToUInt16(vars[1].AsString(), 1);
+                }
+
+                if (vars.Length == 3)
+                {
+                    hue = Utility.ToUInt16(vars[2].AsString(), 0);
+                }
+            }
+
+            if (_lastLiftTypeId > 0)
+            {
+                if (Assistant.DragDropManager.LastIDLifted == _lastLiftTypeId)
+                {
+                    _lastLiftTypeId = 0;
+                    Interpreter.ClearTimeout();
+                    return true;
+                }
+
+                Interpreter.Timeout(30000, () =>
+                {
+                    _lastLiftTypeId = 0;
+                    return true;
+                });
+            }
+            else
+            {
+                List<Assistant.Item> items = new List<Assistant.Item>();
+
+                // No graphic id, maybe searching by name?
+                if (gfx == 0)
+                {
+                    items = World.Player.Backpack.FindItemsByName(gfxStr, true);
+
+                    if (items.Count == 0)
+                    {
+                        SendError($"Item '{gfxStr}' not found");
+                        return true;
+                    }
+                }
+                else
+                {
+                    items = World.Player.Backpack.FindItemsById(gfx, true);
+                }
+
+                if (hue > -1)
+                {
+                    items.RemoveAll(item => item.Hue != hue);
+                }
+
+                if (items.Count > 0)
+                {
+                    Assistant.Item item = items[Utility.Random(items.Count)];
+
+                    if (item.Amount < amount)
+                        amount = item.Amount;
+
+                    _lastLiftTypeId = Assistant.DragDropManager.Drag(item, amount);
+                }
+                else
+                {
+                    SendError(Language.Format(LocString.NoItemOfType, (TypeID)gfx));
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// waitforgump (gumpId/'any') [timeout]
+        /// </summary>
+        private bool WaitForGump(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            if (vars.Length < 1)
+            {
+                throw new RCERuntimeError(node, "Usage: waitforgump (gumpId/'any') [timeout]");
+            }
+
+            uint gumpId = 0;
+            bool strict = false;
+
+            if (vars[0].AsString().IndexOf("any", StringComparison.OrdinalIgnoreCase) != -1)
+            {
+                strict = false;
+            }
+            else
+            {
+                gumpId = Utility.ToUInt32(vars[0].AsString(), 0);
+
+                if (gumpId > 0)
+                {
+                    strict = true;
+                }
+            }
+
+            Interpreter.Timeout(vars.Length == 2 ? vars[1].AsUInt() : 30000, () => { return true; });
+
+            if ((World.Player.HasGump ) &&
+                (World.Player.CurrentGumpI == gumpId || !strict || gumpId == 0))
+            {
+                Interpreter.ClearTimeout();
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// gumpresponse (buttondId) [switch ...]
+        /// </summary>
+        private bool GumpResponse(ASTNode node, Argument[] args, bool quiet, bool force)
+        {
+            if (args.Length < 1)
+            {
+                throw new RCERuntimeError(node, "Usage: gumpresponse (buttondId) [switch ...]");
+            }
+
+            if (args.Length == 2)
+            {
+                uint gumpid = args[0].AsUInt();
+                int buttonid = args[1].AsInt();
+                Gumps.SendAction(gumpid, buttonid);
+                return true;
+            }
+            if (args.Length > 2)
+            {
+                uint gumpid = args[0].AsUInt();
+                int buttonid = args[1].AsInt();
+                IronPython.Runtime.PythonList switches = new IronPython.Runtime.PythonList();
+                IronPython.Runtime.PythonList textIds = new IronPython.Runtime.PythonList();
+                IronPython.Runtime.PythonList textValues = new IronPython.Runtime.PythonList();
+
+                string sl = args[2].AsString().Trim().Replace("\"", "");
+                if (sl.Length > 0)
+                {
+                    List<int> switchList = sl.Split(',').Select(int.Parse).ToList();
+
+                    foreach (int sw in switchList)
+                    {
+                        switches.Add(sw);
+                    }
+                }
+                if (args.Length > 4)
+                {
+                    string til = args[3].AsString().Trim().Replace("\"", "");
+                    if (til.Length > 0)
+                    {
+                        List<int> textIdList = til.Split(',').Select(int.Parse).ToList();
+                        foreach (int textId in textIdList)
+                        {
+                            textIds.Add(textId);
+                        }
+                    }
+                    string tv = args[4].AsString().Trim().Replace("\"", "");
+                    if (tv.Length > 0)
+                    {
+                        List<string> textValueList = tv.Split(',').ToList();
+                        foreach (string textValue in textValueList)
+                        {
+                            textValues.Add(textValue);
+                        }
+                    }
+                }
+
+                Gumps.SendAdvancedAction(gumpid, buttonid, switches, textIds, textValues);
+                return true;
+            }
+
+            return true;
+        }
+        
+        /// <summary>
+        /// gumpclose (gumpID)
+        /// </summary>
+        private bool GumpClose(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            uint gumpI = World.Player.CurrentGumpI;
+
+            if (vars.Length > 0)
+            {
+                gumpI = vars[0].AsUInt();
+            }
+
+
+            if (!Gumps.HasGump(gumpI))
+            {
+                SendError($"'{gumpI}' unknown gump id");
+                return true;
+            }
+
+            Gumps.CloseGump(gumpI);
+
+            return true;
+        }
+
+        /// <summary>
+        /// menu (serial) (index)
+        /// </summary>
+        private static bool ContextMenu(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            if (vars.Length < 2)
+            {
+                throw new RCERuntimeError(node, "Usage: menu (serial) (index)");
+            }
+
+            Serial s = vars[0].AsSerial();
+            ushort index = vars[1].AsUShort();
+            bool blockPopup = true;
+
+            if (vars.Length > 2)
+            {
+                blockPopup = vars[2].AsBool();
+            }
+
+            if (s == Serial.Zero && World.Player != null)
+                s = World.Player.Serial;
+
+            //ScriptManager.BlockPopupMenu = blockPopup;  // Not currently implemented.
+
+            Assistant.Client.Instance.SendToServer(new ContextMenuRequest(s));
+            Assistant.Client.Instance.SendToServer(new ContextMenuResponse(s, index));
+            return true;
+        }
+
+        /// <summary>
+        /// menuresponse (index) (menuId) [hue]
+        /// </summary>
+        private static bool MenuResponse(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            if (vars.Length < 2)
+            {
+                throw new RCERuntimeError(node, "Usage: menuresponse (index) (menuId) [hue]");
+            }
+
+            ushort index = vars[0].AsUShort();
+            ushort menuId = vars[1].AsUShort();
+            ushort hue = 0;
+
+            if (vars.Length == 3)
+                hue = vars[2].AsUShort();
+
+            Assistant.Client.Instance.SendToServer(new MenuResponse(World.Player.CurrentMenuS, World.Player.CurrentMenuI, index,
+                menuId, hue));
+            World.Player.HasMenu = false;
+            return true;
+        }
+
+        /// <summary>
+        /// waitformenu (menuId/'any') [timeout]
+        /// </summary>
+        private bool WaitForMenu(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            if (vars.Length < 1)
+            {
+                throw new RCERuntimeError(node, "Usage: waitformenu (menuId/'any') [timeout]");
+            }
+
+            uint menuId = 0;
+
+            // Look for a specific menu
+            menuId = vars[0].AsString().IndexOf("any", StringComparison.OrdinalIgnoreCase) != -1
+                ? 0
+                : Utility.ToUInt32(vars[0].AsString(), 0);
+
+            Interpreter.Timeout(vars.Length == 2 ? vars[1].AsUInt() : 30000, () => { return true; });
+
+            if (World.Player.HasMenu && (World.Player.CurrentGumpI == menuId || menuId == 0))
+            {
+                Interpreter.ClearTimeout();
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// promptresponse ('response to the prompt')
+        /// </summary>
+        private static bool PromptResponse(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            if (vars.Length < 1)
+            {
+                throw new RCERuntimeError(node, "Usage: promptresponse ('response to the prompt')");
+            }
+
+            Misc.ResponsePrompt(vars[0].AsString());
+            return true;
+        }
+
+        /// <summary>
+        /// waitforprompt (promptId/'any') [timeout]
+        /// </summary>
+        private bool WaitForPrompt(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            if (vars.Length < 1)
+            {
+                throw new RCERuntimeError(node, "Usage: waitforprompt (promptId/'any') [timeout]");
+            }
+
+            uint promptId = 0;
+            bool strict = false;
+
+            // Look for a specific prompt
+            if (vars[0].AsString().IndexOf("any", StringComparison.OrdinalIgnoreCase) != -1)
+            {
+                strict = false;
+            }
+            else
+            {
+                promptId = Utility.ToUInt32(vars[0].AsString(), 0);
+
+                if (promptId > 0)
+                {
+                    strict = true;
+                }
+            }
+
+            Interpreter.Timeout(vars.Length == 2 ? vars[1].AsUInt() : 30000, () => { return true; });
+
+            if (World.Player.HasPrompt && (World.Player.PromptID == promptId || !strict || promptId == 0))
+            {
+                Interpreter.ClearTimeout();
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// cancelprompt 
+        /// </summary>
+        private static bool CancelPrompt(ASTNode node, Argument[] args, bool quiet, bool force)
+        {
+            Misc.CancelPrompt();
+            return true;
+        }
+
+        /// <summary>
+        /// hotkey ('name of hotkey') OR (hotkeyId)
+        /// </summary>
+        private static bool Hotkey(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+
+            return NotImplemented(node, vars, quiet, force);
+            /*
+            if (vars.Length < 1)
+            {
+                throw new RCERuntimeError(node, "Usage: hotkey ('name of hotkey') OR (hotkeyId)");
+            }
+
+            string query = vars[0].AsString();
+
+            KeyData hk = HotKey.GetByNameOrId(query);
+
+            if (hk == null)
+            {
+                throw new RunTimeError($"{command} - Hotkey '{query}' not found");
+            }
+
+            hk.Callback();
+
+            return true;
+
+            */
+        }
+
+        /// <summary>
+        /// overhead ('text') [color] [serial]
+        /// </summary>
+        private static bool OverheadMessage(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            if (vars.Length == 0)
+            {
+                throw new RCERuntimeError(node, "Usage: overhead ('text') [color] [serial]");
+            }
+
+            string msg = vars[0].AsString();
+            // msg = CommandHelper.ReplaceStringInterpolations(msg);  not implemented
+
+            int color = 0;
+            int mobile = Player.Serial;
+            if (vars.Length == 2)
+            {
+                int value = (int)vars[1].AsSerial();
+                if (value < 10240)
+                    color = value;
+                else
+                    mobile = value;
+            }
+            if (vars.Length == 3)
+            {
+                color = vars[1].AsInt();
+                mobile = (int)vars[2].AsSerial();
+            }
+
+            Mobiles.Message(mobile, color, msg);
+
+            return true;
+        }
+
+        /// <summary>
+        /// sysmsg ('text') [color]
+        /// </summary>
+        private static bool SystemMessage(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            if (vars.Length == 0)
+            {
+                throw new RCERuntimeError(node, "Usage: sysmsg ('text') [color]");
+            }
+
+
+            if (vars.Length == 1)
+            {
+                Misc.SendMessage(vars[0].AsString());
+            }
+            else if (vars.Length == 2)
+            {
+                Misc.SendMessage(vars[0].AsString(), vars[1].AsInt(), false);
+            }
+            else
+            {
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// sysmsg ('text') [color]
+        /// </summary>
+        private bool ClearSysMsg(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            m_journal.Clear();
+            return true;
+        }
+
+        /// <summary>
+        /// wait (timeout) [shorthand]
+        /// </summary>
+        private bool Pause(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            if (vars.Length == 0)
+                throw new RCERuntimeError(node, "Usage: wait (timeout) [shorthand]");
+
+            uint timeout = vars[0].AsUInt();
+
+            if (vars.Length == 2)
+            {
+                switch (vars[1].AsString())
+                {
+                    case "s":
+                    case "sec":
+                    case "secs":
+                    case "second":
+                    case "seconds":
+                        timeout *= 1000;
+                        break;
+                    case "m":
+                    case "min":
+                    case "mins":
+                    case "minute":
+                    case "minutes":
+                        timeout *= 60000;
+                        break;
+                }
+            }
+
+            Interpreter.Pause(timeout);
+
+            return true;
+        }
+
+        /// <summary>
+        /// waitforsysmsg 'message to wait for' [timeout]
+        /// </summary>
+        private bool WaitForSysMsg(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+
+            return NotImplemented(node, vars, quiet, force);
+
+            if (vars.Length < 1)
+            {
+                throw new RCERuntimeError(node, "Usage: waitforsysmsg 'message to wait for' [timeout]");
+            }
+            /*
+            if (SystemMessages.Exists(vars[0].AsString()))
+            {
+                Interpreter.ClearTimeout();
+                return true;
+            }
+            */
+            Interpreter.Timeout(vars.Length > 1 ? vars[1].AsUInt() : 30000, () => { return true; });
+
+            return false;
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2251,13 +3335,6 @@ namespace RazorEnhanced.RCE
         private static bool FlyCommand(ASTNode node, Argument[] args, bool quiet, bool force)
         {
             Player.Fly(true);
-            return true;
-        }
-
-        private static bool Pause(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
-            int delay = args[0].AsInt();
-            Misc.Pause(delay);
             return true;
         }
 
@@ -2334,25 +3411,9 @@ namespace RazorEnhanced.RCE
             return true;
         }
 
-        /// <summary>
-        /// attack (serial)
-        /// </summary>
-        private static bool Attack(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
-            if (args.Length < 1)
-            {
-                Player.SetWarMode(true);
-            }
-            else
-            {
-                uint serial = args[0].AsSerial();
-                Mobile mobile = Mobiles.FindBySerial((int)serial);
-                if (mobile != null)
-                    Player.Attack(mobile);
-            }
 
-            return true;
-        }
+
+
 
         static internal Dictionary<string, string> map = new Dictionary<string, string>()
             {
@@ -2505,84 +3566,7 @@ namespace RazorEnhanced.RCE
         }
 
 
-        /// <summary>
-        /// usetype (graphic) [color] [source] [range or search level]
-        /// </summary>
-        private IComparable UseType(ASTNode node, Argument[] args, bool quiet)
-        {
-            if (args.Length == 0)
-            {
-                SendError("Insufficient parameters");
-                return false;
-            }
-            int itemID = args[0].AsInt();
-            int color = -1;
-            int container = -1;
-            if (args.Length > 1)
-            {
-                color = args[1].AsInt();
-            }
-            if (args.Length > 2)
-            {
-                container = args[2].AsInt();
-            }
 
-            Item item = Items.FindByID(itemID, color, container, true);
-            if (item == null)
-                return false;
-
-            // because RCE scripts seem to use usetype when they mean targettype
-            if (Assistant.Targeting.HasTarget)
-            {
-                Assistant.Targeting.Target(item.Serial, false);
-            }
-            else
-            {
-                Items.UseItem(item.Serial);
-                Misc.Pause(100);
-            }
-            return true;
-        }
-
-        /// <summary>
-        /// useobject (serial)
-        /// </summary>
-        private bool UseObject(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
-            if (args.Length == 0)
-            {
-                SendError("Insufficient parameters");
-                return true;
-            }
-            Assistant.Serial serial = (int)args[0].AsSerial();
-            if (serial.IsItem)
-            {
-                // because RCE scripts seem to use usetype when they mean targettype
-                if (Assistant.Targeting.HasTarget)
-                {
-                    Assistant.Targeting.Target(serial, false);
-                }
-                else
-                {
-                    Items.UseItem(serial);
-                    Misc.Pause(100);
-                }
-            }
-            else
-            {
-                // because RCE scripts seem to use usetype when they mean targettype
-                if (Assistant.Targeting.HasTarget)
-                {
-                    Assistant.Targeting.Target(serial, false);
-                }
-                else
-                {
-                    Mobiles.UseMobile(serial);
-                }
-            }
-
-            return true;
-        }
 
         /// <summary>
         /// useonce (graphic) [color]
@@ -2844,32 +3828,6 @@ namespace RazorEnhanced.RCE
             return true;
         }
 
-        /// <summary>
-        /// headmsg ('text') [color] [serial]
-        /// </summary>
-        private static bool HeadMsg(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
-            string msg = args[0].AsString();
-            int color = 0;
-            int mobile = Player.Serial;
-            if (args.Length == 2)
-            {
-                int value = (int)args[1].AsSerial();
-                if (value < 10240)
-                    color = value;
-                else
-                    mobile = value;
-            }
-            if (args.Length == 3)
-            {
-                color = args[1].AsInt();
-                mobile = (int)args[2].AsSerial();
-            }
-
-            Mobiles.Message(mobile, color, msg);
-
-            return true;
-        }
 
         //TODO: Not implemented properly .. I dunno how to do a party only msg
         /// <summary>
@@ -3460,57 +4418,7 @@ namespace RazorEnhanced.RCE
             return NotImplemented(node, args, quiet, force);
         }
 
-        /// <summary>
-        /// dress ['profile name']
-        /// </summary>
-        private bool Dress(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
 
-            if (args.Length == 1)
-            {
-                string dressListName = args[0].AsString();
-                if (Settings.Dress.ListExists(dressListName))
-                {
-                    RazorEnhanced.Dress.ChangeList(dressListName);
-                }
-                else
-                {
-                    SendError(String.Format("Dress List {0} does not exist", dressListName));
-                }
-            }
-            RazorEnhanced.Dress.DressFStart();
-            while (RazorEnhanced.Dress.DressStatus())
-            {
-                Misc.Pause(100);
-            }
-            return true;
-        }
-
-        /// <summary>
-        /// undress ['profile name']
-        /// </summary>
-        private bool Undress(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
-
-            if (args.Length == 1)
-            {
-                string unDressListName = args[0].AsString();
-                if (Settings.Dress.ListExists(unDressListName))
-                {
-                    RazorEnhanced.Dress.ChangeList(unDressListName);
-                }
-                else
-                {
-                    SendError(String.Format("UnDress List {0} does not exist", unDressListName));
-                }
-            }
-            RazorEnhanced.Dress.UnDressFStart();
-            while (RazorEnhanced.Dress.UnDressStatus())
-            {
-                Misc.Pause(100);
-            }
-            return true;
-        }
 
         /// <summary>
         /// dressconfig What is this supposed to do ? NOT IMPLEMENTED
@@ -3560,110 +4468,6 @@ namespace RazorEnhanced.RCE
             return NotImplemented(node, args, quiet, force);
         }
 
-        /// <summary>
-        /// waitforgump (gump id/'any') (timeout)
-        /// </summary>
-        private static bool WaitForGump(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
-            if (args.Length == 2)
-            {
-                uint gumpid = args[0].AsUInt();
-                int delay = args[1].AsInt();
-                return Gumps.WaitForGump(gumpid, delay);
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// replygump gump-id button [switch ...]
-        /// </summary>
-        private static bool ReplyGump(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
-            if (args.Length == 2)
-            {
-                uint gumpid = args[0].AsUInt();
-                int buttonid = args[1].AsInt();
-                Gumps.SendAction(gumpid, buttonid);
-                return true;
-            }
-            if (args.Length > 2)
-            {
-                uint gumpid = args[0].AsUInt();
-                int buttonid = args[1].AsInt();
-                IronPython.Runtime.PythonList switches = new IronPython.Runtime.PythonList();
-                IronPython.Runtime.PythonList textIds = new IronPython.Runtime.PythonList();
-                IronPython.Runtime.PythonList textValues = new IronPython.Runtime.PythonList();
-
-                string sl = args[2].AsString().Trim().Replace("\"", "");
-                if (sl.Length > 0)
-                {
-                    List<int> switchList = sl.Split(',').Select(int.Parse).ToList();
-
-                    foreach (int sw in switchList)
-                    {
-                        switches.Add(sw);
-                    }
-                }
-                if (args.Length > 4)
-                {
-                    string til = args[3].AsString().Trim().Replace("\"", "");
-                    if (til.Length > 0)
-                    {
-                        List<int> textIdList = til.Split(',').Select(int.Parse).ToList();
-                        foreach (int textId in textIdList)
-                        {
-                            textIds.Add(textId);
-                        }
-                    }
-                    string tv = args[4].AsString().Trim().Replace("\"", "");
-                    if (tv.Length > 0)
-                    {
-                        List<string> textValueList = tv.Split(',').ToList();
-                        foreach (string textValue in textValueList)
-                        {
-                            textValues.Add(textValue);
-                        }
-                    }
-                }
-
-                Gumps.SendAdvancedAction(gumpid, buttonid, switches, textIds, textValues);
-                return true;
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// closegump 'container' 'serial'
-        /// </summary>
-        private bool CloseGump(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
-
-            if (args.Length == 2)
-            {
-                string container = args[0].AsString().ToLower();
-                if (container == "container")
-                {
-                    uint gumpid = args[1].AsSerial();
-                    Gumps.CloseGump(gumpid);
-                    return true;
-                }
-                else
-                {
-                    SendError(String.Format("Unable to closegumps on {0} type objects", container));
-                }
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// clearjournal
-        /// </summary>
-        private bool ClearJournal(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
-            m_journal.Clear();
-            return true;
-        }
 
         /// <summary>
         /// waitforjournal ('text') (timeout) 
@@ -3774,14 +4578,6 @@ namespace RazorEnhanced.RCE
         {
             Assistant.ScreenCapManager.CaptureNow();
             return true;
-        }
-
-        /// <summary>
-        /// hotkeys
-        /// </summary>
-        private static bool Hotkeys(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
-            return NotImplemented(node, args, quiet, force);
         }
 
         /// <summary>
@@ -4039,26 +4835,6 @@ namespace RazorEnhanced.RCE
         }
 
         /// <summary>
-        /// sysmsg (text) [color]
-        /// </summary>
-        private bool SysMsg(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
-            if (args.Length == 1)
-            {
-                Misc.SendMessage(args[0].AsString());
-            }
-            else if (args.Length == 2)
-            {
-                Misc.SendMessage(args[0].AsString(), args[1].AsInt(), false);
-            }
-            else
-            {
-                return false;
-            }
-            return true;
-        }
-
-        /// <summary>
         /// chatmsg (text) [color]
         /// </summary>
         private static bool ChatMsg(ASTNode node, Argument[] args, bool quiet, bool force)
@@ -4099,21 +4875,6 @@ namespace RazorEnhanced.RCE
         }
 
         /// <summary>
-        /// promptmsg (text) [color]
-        /// </summary>
-        private static bool PromptMsg(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
-            if (args.Length == 1)
-            {
-                var msg = args[0].AsString();
-                Misc.ResponsePrompt(msg);
-                return true;
-
-            }
-            return false;
-        }
-
-        /// <summary>
         /// timermsg (delay) (text) [color]
         /// </summary>
         private static bool TimerMsg(ASTNode node, Argument[] args, bool quiet, bool force)
@@ -4132,28 +4893,6 @@ namespace RazorEnhanced.RCE
                 return true;
             }
             return false;
-        }
-
-        /// <summary>
-        /// waitforprompt (timeout)
-        /// </summary>
-        private static bool WaitForPrompt(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
-            if (args.Length == 1)
-            {
-                var delay = args[0].AsInt();
-                return Misc.WaitForPrompt(delay);
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// cancelprompt 
-        /// </summary>
-        private static bool CancelPrompt(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
-            Misc.CancelPrompt();
-            return true;
         }
 
         /// <summary>
@@ -4212,63 +4951,6 @@ namespace RazorEnhanced.RCE
                 }
                 return Friend.RemoveFriend(list_name, serial);
             }
-            return false;
-        }
-
-        /// <summary>
-        /// contextmenu (serial) (option)
-        /// </summary>
-        private static bool ContextMenu(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
-            // docs say something about options, guessing thats the selection ?
-            if (args.Length == 2)
-            {
-                uint serial = args[0].AsSerial();
-                string option = args[1].AsString();
-
-                return Misc.UseContextMenu((int)serial, option, 1000);
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// waitforcontext (serial) (option) (timeout)
-        /// </summary>
-        private bool WaitForContext(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
-            if (args.Length < 2)
-            {
-                SendError("Usage is waitforcontents serial contextSelection timeout");
-                WrongParameterCount(node, 2, args.Length, "waitforcontents serial contextSelection timeout");
-            }
-            int timeout = 5000;
-            if (args.Length > 2)
-            {
-                timeout = args[2].AsInt();
-            }
-            if (args.Length > 1)
-            {
-                uint serial = args[0].AsSerial();
-
-                try
-                {
-                    int intOption = args[1].AsInt();
-                    Misc.WaitForContext((int)serial, timeout, false);
-                    Misc.ContextReply((int)serial, intOption);
-                    return true;
-                }
-                catch (RCERuntimeError)
-                {
-                    // try string
-                }
-
-                string option = args[1].AsString();
-                Misc.WaitForContext((int)serial, timeout, false);
-                Misc.ContextReply((int)serial, option);
-                return true;
-            }
-
             return false;
         }
 
@@ -4468,30 +5150,9 @@ namespace RazorEnhanced.RCE
             return false;
         }
 
-        /// <summary>
-        /// cast (spell id/'spell name'/'last') [serial]
-        /// </summary>
-        private bool Cast(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
-            if (args.Length == 1)
-            {
-                string spell = args[0].AsString();
-                Spells.Cast(spell);
-            }
-            else if (args.Length == 2)
-            {
-                string spell = args[0].AsString();
-                uint serial = args[1].AsSerial();
-                Spells.Cast(spell, serial);
-            }
-            else
-            {
-                SendError("Incorrect number of parameters");
-                return false;
-            }
 
-            return true;
-        }
+
+
 
         /// <summary>
         /// chivalryheal [serial] 

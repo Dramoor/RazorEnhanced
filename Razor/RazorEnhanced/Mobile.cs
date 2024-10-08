@@ -903,6 +903,42 @@ namespace RazorEnhanced
         }
 
         /// <summary>
+        /// Common logic for dclicktype and targettype to find mobiles by name
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="inRange"></param>
+        /// <returns></returns>
+        public static List<Assistant.Mobile> GetMobilesByName(string name, bool inRange)
+        {
+            List<Assistant.Mobile> mobiles = new List<Assistant.Mobile>();
+
+            mobiles.AddRange(inRange
+                ? World.FindMobilesByName(name).Where(m => Utility.InRange(World.Player.Position, m.Position, 2))
+                : World.FindMobilesByName(name));
+
+            return mobiles;
+        }
+
+        /// <summary>
+        /// Common logic for dclicktype and targettype to find mobiles by id
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="inRange"></param>
+        /// <returns></returns>
+        public static List<Assistant.Mobile> GetMobilesById(ushort id, bool inRange)
+        {
+            List<Assistant.Mobile> mobiles = new List<Assistant.Mobile>();
+
+            mobiles.AddRange(inRange
+                ? World.MobilesInRange().Where(m =>
+                    Utility.InRange(World.Player.Position, m.Position, 2) && m.TypeID == id)
+                : World.MobilesInRange().Where(m => m.TypeID == id));
+
+            return mobiles;
+        }
+
+
+        /// <summary>
         /// Find the Mobile with a specific Graphic.
         /// </summary>
         /// <param name="graphic">Graphic of a Mobile.</param>
