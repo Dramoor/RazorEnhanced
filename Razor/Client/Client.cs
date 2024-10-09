@@ -30,7 +30,7 @@ namespace Assistant
         //public static readonly int RestockAgent = 10;
         //public static readonly int SellAgent = 11;
         //public static readonly int BuyAgent = 12;
-        //public static readonly int PotionHotkeys = 13;
+        public static readonly int PotionHotkeys = 13;
         //public static readonly int RandomTargets = 14;
         //public static readonly int ClosestTargets = 15;
         public static readonly int OverheadHealth = 16;

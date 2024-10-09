@@ -2,6 +2,7 @@
 using Accord.Math;
 using Assistant;
 using IronPython.Runtime;
+using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Utils;
 using System;
 using System.Collections.Concurrent;
@@ -21,6 +22,7 @@ using System.Windows.Forms;
 using System.Windows.Interop;
 using Ultima;
 using WebSocketSharp;
+using static IronPython.Modules._ast;
 using static RazorEnhanced.Settings;
 
 namespace RazorEnhanced.RCE
@@ -93,6 +95,12 @@ namespace RazorEnhanced.RCE
         public RCEStopError(string line, int lineNumber, ASTNode node, string error) : base(line, lineNumber, node, error) { }
     }
 
+    public class RunTimeError : Exception
+    {
+        public RunTimeError(string error) : base(error)
+        {
+        }
+    }
 
 
 
@@ -520,139 +528,251 @@ namespace RazorEnhanced.RCE
             // General Waits/Pauses
             Interpreter.RegisterCommandHandler("wait", Pause); //PauseAction
             Interpreter.RegisterCommandHandler("pause", Pause); //PauseAction
-            Interpreter.RegisterCommandHandler("waitforsysmsg", WaitForSysMsg);
-            Interpreter.RegisterCommandHandler("wfsysmsg", WaitForSysMsg);
+            Interpreter.RegisterCommandHandler("waitforsysmsg", WaitForSysMsg); //  Not implemented yet.
+            Interpreter.RegisterCommandHandler("wfsysmsg", WaitForSysMsg); //  Not implemented yet.
+
+            // Misc
+            Interpreter.RegisterCommandHandler("setability", SetAbility); //SetAbilityAction
+            Interpreter.RegisterCommandHandler("setlasttarget", SetLastTarget); //SetLastTargetAction
+            Interpreter.RegisterCommandHandler("lasttarget", LastTarget); //LastTargetAction
+            Interpreter.RegisterCommandHandler("skill", UseSkill); //SkillAction
+            Interpreter.RegisterCommandHandler("useskill", UseSkill); //SkillAction
+            Interpreter.RegisterCommandHandler("walk", Walk); //Move/WalkAction
+            Interpreter.RegisterCommandHandler("potion", Potion);
+
+            // Script related
+            Interpreter.RegisterCommandHandler("script", PlayScript);
+            Interpreter.RegisterCommandHandler("setvar", SetVar);
+            Interpreter.RegisterCommandHandler("setvariable", SetVar);
+            Interpreter.RegisterCommandHandler("unsetvar", UnsetVar);
+            Interpreter.RegisterCommandHandler("unsetvariable", UnsetVar);
+
+            Interpreter.RegisterCommandHandler("stop", Stop);
+            Interpreter.RegisterCommandHandler("scriptstop", ScriptStop);
+            
+            Interpreter.RegisterCommandHandler("clearall", ClearAll);
+
+            Interpreter.RegisterCommandHandler("clearhands", ClearHands);
+
+            Interpreter.RegisterCommandHandler("virtue", Virtue);
+
+            Interpreter.RegisterCommandHandler("random", Random);
+
+            Interpreter.RegisterCommandHandler("cleardragdrop", ClearDragDrop);
+            Interpreter.RegisterCommandHandler("interrupt", Interrupt);
+
+            Interpreter.RegisterCommandHandler("sound", Sound);
+            Interpreter.RegisterCommandHandler("playsound", Sound);
+            Interpreter.RegisterCommandHandler("music", Music);
+            Interpreter.RegisterCommandHandler("playmusic", Music);
+
+            Interpreter.RegisterCommandHandler("classicuo", ClassicUOProfile);  //  Not implemented yet.
+            Interpreter.RegisterCommandHandler("cuo", ClassicUOProfile);  //  Not implemented yet.
+
+            Interpreter.RegisterCommandHandler("rename", Rename);
+
+            Interpreter.RegisterCommandHandler("getlabel", GetLabel);  //  Not implemented yet.
+
+            Interpreter.RegisterCommandHandler("ignore", AddIgnore);
+            Interpreter.RegisterCommandHandler("ignoreobject", AddIgnore);
+            Interpreter.RegisterCommandHandler("unignore", RemoveIgnore);
+            Interpreter.RegisterCommandHandler("clearignore", ClearIgnore);
+
+            Interpreter.RegisterCommandHandler("cooldown", Cooldown); //  Not implemented yet.
+
+            Interpreter.RegisterCommandHandler("poplist", PopList);
+            Interpreter.RegisterCommandHandler("pushlist", PushList);
+            Interpreter.RegisterCommandHandler("removelist", RemoveList);
+            Interpreter.RegisterCommandHandler("createlist", CreateList);
+            Interpreter.RegisterCommandHandler("clearlist", ClearList);
+
+            Interpreter.RegisterCommandHandler("settimer", SetTimer);
+            Interpreter.RegisterCommandHandler("removetimer", RemoveTimer);
+            Interpreter.RegisterCommandHandler("createtimer", CreateTimer);
+
+            #endregion
+
+            #region uosteam stuff
+
+            // Commands. From RCEteam Documentation
+            Interpreter.RegisterCommandHandler("fly", FlyCommand);
+            Interpreter.RegisterCommandHandler("land", LandCommand);
+            Interpreter.RegisterCommandHandler("clickobject", ClickObject);
+            Interpreter.RegisterCommandHandler("bandageself", BandageSelf);
+            Interpreter.RegisterCommandHandler("useonce", UseOnce);
+            Interpreter.RegisterCommandHandler("clearusequeue", CleanUseQueue);
+            Interpreter.RegisterCommandHandler("moveitem", MoveItem);
+            Interpreter.RegisterCommandHandler("moveitemoffset", MoveItemOffset);
+            Interpreter.RegisterCommandHandler("movetypeoffset", MoveTypeOffset);
+            Interpreter.RegisterCommandHandler("turn", Turn);
+            Interpreter.RegisterCommandHandler("pathfindto", PathFindTo);
+            Interpreter.RegisterCommandHandler("run", Run);
+            Interpreter.RegisterCommandHandler("feed", Feed);
+            Interpreter.RegisterCommandHandler("shownames", ShowNames);
+            Interpreter.RegisterCommandHandler("togglehands", ToggleHands);
+            Interpreter.RegisterCommandHandler("equipitem", EquipItem);
+            Interpreter.RegisterCommandHandler("togglemounted", ToggleMounted);
+            Interpreter.RegisterCommandHandler("equipwand", EquipWand); //TODO: This method is a stub. Remove after successful testing.
+            Interpreter.RegisterCommandHandler("buy", Buy);
+            Interpreter.RegisterCommandHandler("sell", Sell);
+            Interpreter.RegisterCommandHandler("clearbuy", ClearBuy);
+            Interpreter.RegisterCommandHandler("location", Location);
+            Interpreter.RegisterCommandHandler("clearsell", ClearSell);
+            Interpreter.RegisterCommandHandler("organizer", Organizer);
+            Interpreter.RegisterCommandHandler("restock", Restock);
+            Interpreter.RegisterCommandHandler("autoloot", Autoloot); //TODO: This method is a stub. Remove after successful testing.
+            Interpreter.RegisterCommandHandler("autotargetobject", AutoTargetObject);
+            Interpreter.RegisterCommandHandler("dressconfig", DressConfig); // I can't tell what this is intended to do in RCE
+            Interpreter.RegisterCommandHandler("toggleautoloot", ToggleAutoloot);
+            Interpreter.RegisterCommandHandler("togglescavenger", ToggleScavenger);
+            Interpreter.RegisterCommandHandler("counter", Counter); //This has no meaning in RE
+            Interpreter.RegisterCommandHandler("waitforjournal", WaitForJournal);
+            Interpreter.RegisterCommandHandler("info", Info);
+            Interpreter.RegisterCommandHandler("ping", Ping);
+            Interpreter.RegisterCommandHandler("resync", Resync);
+            Interpreter.RegisterCommandHandler("snapshot", Snapshot);
+            Interpreter.RegisterCommandHandler("where", Where);
+            Interpreter.RegisterCommandHandler("messagebox", MessageBox);
+            Interpreter.RegisterCommandHandler("mapuo", MapUO); // not going to implement
+            Interpreter.RegisterCommandHandler("clickscreen", ClickScreen);
+            Interpreter.RegisterCommandHandler("paperdoll", Paperdoll);
+            Interpreter.RegisterCommandHandler("helpbutton", HelpButton); //not going to implement
+            Interpreter.RegisterCommandHandler("guildbutton", GuildButton);
+            Interpreter.RegisterCommandHandler("questsbutton", QuestsButton);
+            Interpreter.RegisterCommandHandler("logoutbutton", LogoutButton);
+            Interpreter.RegisterCommandHandler("virtue", Virtue);
+            Interpreter.RegisterCommandHandler("msg", MsgCommand);
+            Interpreter.RegisterCommandHandler("partymsg", PartyMsg);
+            Interpreter.RegisterCommandHandler("guildmsg", GuildMsg);
+            Interpreter.RegisterCommandHandler("allymsg", AllyMsg);
+            Interpreter.RegisterCommandHandler("whispermsg", WhisperMsg);
+            Interpreter.RegisterCommandHandler("yellmsg", YellMsg);
+            Interpreter.RegisterCommandHandler("chatmsg", ChatMsg);
+            Interpreter.RegisterCommandHandler("emotemsg", EmoteMsg);
+            Interpreter.RegisterCommandHandler("timermsg", TimerMsg);
+
+            Interpreter.RegisterCommandHandler("addfriend", AddFriend); //not so much
+            Interpreter.RegisterCommandHandler("removefriend", RemoveFriend); // not implemented, use the gui
 
 
+            Interpreter.RegisterCommandHandler("setskill", SetSkill);
+            Interpreter.RegisterCommandHandler("waitforproperties", WaitForProperties);
+            Interpreter.RegisterCommandHandler("autocolorpick", AutoColorPick);
+            Interpreter.RegisterCommandHandler("waitforcontents", WaitForContents);
+            Interpreter.RegisterCommandHandler("miniheal", MiniHeal);
+            Interpreter.RegisterCommandHandler("bigheal", BigHeal);
+            Interpreter.RegisterCommandHandler("chivalryheal", ChivalryHeal);
+            Interpreter.RegisterCommandHandler("waitfortarget", WaitForTarget);
+            Interpreter.RegisterCommandHandler("canceltarget", CancelTarget);
+            Interpreter.RegisterCommandHandler("cancelautotarget", CancelAutoTarget);
+            Interpreter.RegisterCommandHandler("target", Target);
+            Interpreter.RegisterCommandHandler("targettype", TargetType);
+            Interpreter.RegisterCommandHandler("targetground", TargetGround);
+            Interpreter.RegisterCommandHandler("targettile", TargetTile);
+            Interpreter.RegisterCommandHandler("targettileoffset", TargetTileOffset);
+            Interpreter.RegisterCommandHandler("targettilerelative", TargetTileRelative);
+            Interpreter.RegisterCommandHandler("targetresource", TargetResource);
+            Interpreter.RegisterCommandHandler("cleartargetqueue", ClearTargetQueue);
+            Interpreter.RegisterCommandHandler("warmode", WarMode);
+            Interpreter.RegisterCommandHandler("getenemy", GetEnemy); //TODO: add "transformations" list
+            Interpreter.RegisterCommandHandler("getfriend", GetFriend); //TODO: add "transformations" list
+            Interpreter.RegisterCommandHandler("namespace", ManageNamespaces); //TODO: add "transformations" list
+            Interpreter.RegisterCommandHandler("script", ManageScripts); //TODO: add "transformations" list
+
+            #endregion
 
 
+            #region Expressions
 
+            Interpreter.RegisterExpressionHandler("str", (ASTNode node, Argument[] args, bool quiet) => Player.Str);
+            Interpreter.RegisterExpressionHandler("int", (ASTNode node, Argument[] args, bool quiet) => Player.Int);
+            Interpreter.RegisterExpressionHandler("dex", (ASTNode node, Argument[] args, bool quiet) => Player.Dex);
+
+            Interpreter.RegisterExpressionHandler("stam", (ASTNode node, Argument[] args, bool quiet) => Player.Stam);
+            Interpreter.RegisterExpressionHandler("maxstam", (ASTNode node, Argument[] args, bool quiet) => Player.StamMax);
+            Interpreter.RegisterExpressionHandler("diffstam", (ASTNode node, Argument[] args, bool quiet) => (int)(Player.StamMax - Player.Stam));
+
+            Interpreter.RegisterExpressionHandler("hp", (ASTNode node, Argument[] args, bool quiet) => Player.Hits);
+            Interpreter.RegisterExpressionHandler("maxhp", (ASTNode node, Argument[] args, bool quiet) => Player.HitsMax);
+            Interpreter.RegisterExpressionHandler("diffhp", (ASTNode node, Argument[] args, bool quiet) => (int)(Player.HitsMax - Player.Hits));
+
+            Interpreter.RegisterExpressionHandler("hits", (ASTNode node, Argument[] args, bool quiet) => Player.Hits);
+            Interpreter.RegisterExpressionHandler("maxhits", (ASTNode node, Argument[] args, bool quiet) => Player.HitsMax);
+            Interpreter.RegisterExpressionHandler("diffhits", (ASTNode node, Argument[] args, bool quiet) => (int)(Player.HitsMax - Player.Hits));
+
+            Interpreter.RegisterExpressionHandler("mana", (ASTNode node, Argument[] args, bool quiet) => Player.Mana);
+            Interpreter.RegisterExpressionHandler("maxmana", (ASTNode node, Argument[] args, bool quiet) => Player.ManaMax);
+            Interpreter.RegisterExpressionHandler("diffmana", (ASTNode node, Argument[] args, bool quiet) => (int)(Player.ManaMax - Player.Mana));
+
+            Interpreter.RegisterExpressionHandler("poisoned", (ASTNode node, Argument[] args, bool quiet) => Player.Poisoned);
+
+            Interpreter.RegisterExpressionHandler("hidden", (ASTNode node, Argument[] args, bool quiet) => !Player.Visible);
+
+            Interpreter.RegisterExpressionHandler("mounted", (ASTNode node, Argument[] args, bool quiet) => Player.Mount != null);
+
+            Interpreter.RegisterExpressionHandler("rhandempty", (ASTNode node, Argument[] args, bool quiet) => Player.GetItemOnLayer("RightHand") == null);
+            Interpreter.RegisterExpressionHandler("lhandempty", (ASTNode node, Argument[] args, bool quiet) => Player.GetItemOnLayer("LeftHand") == null);
+
+            Interpreter.RegisterExpressionHandler("dead", (ASTNode node, Argument[] args, bool quiet) => Player.IsGhost);
+
+            Interpreter.RegisterExpressionHandler("weight", (ASTNode node, Argument[] args, bool quiet) => Player.Weight);
+            Interpreter.RegisterExpressionHandler("maxweight", (ASTNode node, Argument[] args, bool quiet) => Player.MaxWeight);
+            Interpreter.RegisterExpressionHandler("diffweight", (ASTNode node, Argument[] args, bool quiet) => (int)(Player.MaxWeight - Player.Weight));
+
+            Interpreter.RegisterExpressionHandler("skill", Skill);
+            Interpreter.RegisterExpressionHandler("position", Position);
+
+            Interpreter.RegisterExpressionHandler("followers", (ASTNode node, Argument[] args, bool quiet) => Player.Followers);
+            Interpreter.RegisterExpressionHandler("maxfollowers", (ASTNode node, Argument[] args, bool quiet) => Player.FollowersMax);
+            Interpreter.RegisterExpressionHandler("name", (ASTNode node, Argument[] args, bool quiet) => Player.Name);
+
+            Interpreter.RegisterExpressionHandler("targetexists", TargetExists);
+
+            Interpreter.RegisterExpressionHandler("paralyzed", (ASTNode node, Argument[] args, bool quiet) => Player.Paralized);
+
+            Interpreter.RegisterExpressionHandler("invuln", (ASTNode node, Argument[] args, bool quiet) => Player.YellowHits);
+            Interpreter.RegisterExpressionHandler("invul", (ASTNode node, Argument[] args, bool quiet) => Player.YellowHits);
+            Interpreter.RegisterExpressionHandler("blessed", (ASTNode node, Argument[] args, bool quiet) => Player.YellowHits);
+
+            Interpreter.RegisterExpressionHandler("warmode", (ASTNode node, Argument[] args, bool quiet) => Player.WarMode);
+
+            Interpreter.RegisterExpressionHandler("count", CountExpression);  // not implemented
+            Interpreter.RegisterExpressionHandler("counter", CountExpression); // not implemented
+
+            Interpreter.RegisterExpressionHandler("insysmsg", InSysMessage); // not implemented
+            Interpreter.RegisterExpressionHandler("insysmessage", InSysMessage); // not implemented
+
+            Interpreter.RegisterExpressionHandler("findtype", FindType);
+
+            Interpreter.RegisterExpressionHandler("findbuff", FindBuffDebuff);
+            Interpreter.RegisterExpressionHandler("finddebuff", FindBuffDebuff);
+
+            Interpreter.RegisterExpressionHandler("queued", (ASTNode node, Argument[] args, bool quiet) => ActionQueue.Empty);
+
+            Interpreter.RegisterExpressionHandler("varexist", VarExist);
+            Interpreter.RegisterExpressionHandler("varexists", VarExist);
+        
+            Interpreter.RegisterExpressionHandler("itemcount", (ASTNode node, Argument[] args, bool quiet) => Assistant.World.Player.Backpack.GetTotalCount()); //Player.Backpack.GetTotalCount()
+
+            Interpreter.RegisterExpressionHandler("poplist", PopListExp);
+            Interpreter.RegisterExpressionHandler("listexists", ListExists);
+            Interpreter.RegisterExpressionHandler("list", ListLength);
+            Interpreter.RegisterExpressionHandler("inlist", InList);
+            
+            Interpreter.RegisterExpressionHandler("timer", TimerValue);
+            Interpreter.RegisterExpressionHandler("timerexists", TimerExists);
 
             #endregion
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-            #region uosteam stuff
-
-            // Commands. From RCEteam Documentation
-            m_Interpreter.RegisterCommandHandler("fly", FlyCommand);
-            m_Interpreter.RegisterCommandHandler("land", LandCommand);
-            m_Interpreter.RegisterCommandHandler("setability", SetAbility);
-            m_Interpreter.RegisterCommandHandler("clearhands", ClearHands);
-            m_Interpreter.RegisterCommandHandler("clickobject", ClickObject);
-            m_Interpreter.RegisterCommandHandler("bandageself", BandageSelf);
-            m_Interpreter.RegisterCommandHandler("useonce", UseOnce);
-            m_Interpreter.RegisterCommandHandler("clearusequeue", CleanUseQueue);
-            m_Interpreter.RegisterCommandHandler("moveitem", MoveItem);
-            m_Interpreter.RegisterCommandHandler("moveitemoffset", MoveItemOffset);
-            m_Interpreter.RegisterCommandHandler("movetypeoffset", MoveTypeOffset);
-            m_Interpreter.RegisterCommandHandler("walk", Walk);
-            m_Interpreter.RegisterCommandHandler("turn", Turn);
-            m_Interpreter.RegisterCommandHandler("pathfindto", PathFindTo);
-            m_Interpreter.RegisterCommandHandler("run", Run);
-            m_Interpreter.RegisterCommandHandler("useskill", UseSkill);
-            m_Interpreter.RegisterCommandHandler("feed", Feed);
-            m_Interpreter.RegisterCommandHandler("rename", RenamePet);
-            m_Interpreter.RegisterCommandHandler("shownames", ShowNames);
-            m_Interpreter.RegisterCommandHandler("togglehands", ToggleHands);
-            m_Interpreter.RegisterCommandHandler("equipitem", EquipItem);
-            m_Interpreter.RegisterCommandHandler("togglemounted", ToggleMounted);
-            m_Interpreter.RegisterCommandHandler("equipwand", EquipWand); //TODO: This method is a stub. Remove after successful testing.
-            m_Interpreter.RegisterCommandHandler("buy", Buy);
-            m_Interpreter.RegisterCommandHandler("sell", Sell);
-            m_Interpreter.RegisterCommandHandler("clearbuy", ClearBuy);
-            m_Interpreter.RegisterCommandHandler("location", Location);
-            m_Interpreter.RegisterCommandHandler("clearsell", ClearSell);
-            m_Interpreter.RegisterCommandHandler("organizer", Organizer);
-            m_Interpreter.RegisterCommandHandler("restock", Restock);
-            m_Interpreter.RegisterCommandHandler("autoloot", Autoloot); //TODO: This method is a stub. Remove after successful testing.
-            m_Interpreter.RegisterCommandHandler("autotargetobject", AutoTargetObject);
-            m_Interpreter.RegisterCommandHandler("dressconfig", DressConfig); // I can't tell what this is intended to do in RCE
-            m_Interpreter.RegisterCommandHandler("toggleautoloot", ToggleAutoloot);
-            m_Interpreter.RegisterCommandHandler("togglescavenger", ToggleScavenger);
-            m_Interpreter.RegisterCommandHandler("counter", Counter); //This has no meaning in RE
-            m_Interpreter.RegisterCommandHandler("unsetalias", UnSetAlias);
-            m_Interpreter.RegisterCommandHandler("setalias", SetAlias);
-            m_Interpreter.RegisterCommandHandler("promptalias", PromptAlias);
-
-            m_Interpreter.RegisterCommandHandler("waitforjournal", WaitForJournal);
-            m_Interpreter.RegisterCommandHandler("poplist", PopList);
-            m_Interpreter.RegisterCommandHandler("pushlist", PushList);
-            m_Interpreter.RegisterCommandHandler("removelist", RemoveList);
-            m_Interpreter.RegisterCommandHandler("createlist", CreateList);
-            m_Interpreter.RegisterCommandHandler("clearlist", ClearList);
-            m_Interpreter.RegisterCommandHandler("info", Info);
-            m_Interpreter.RegisterCommandHandler("ping", Ping);
-            m_Interpreter.RegisterCommandHandler("playmacro", PlayMacro);
-            m_Interpreter.RegisterCommandHandler("playsound", PlaySound);
-            m_Interpreter.RegisterCommandHandler("resync", Resync);
-            m_Interpreter.RegisterCommandHandler("snapshot", Snapshot);
-            m_Interpreter.RegisterCommandHandler("where", Where);
-            m_Interpreter.RegisterCommandHandler("messagebox", MessageBox);
-            m_Interpreter.RegisterCommandHandler("mapuo", MapUO); // not going to implement
-            m_Interpreter.RegisterCommandHandler("clickscreen", ClickScreen);
-            m_Interpreter.RegisterCommandHandler("paperdoll", Paperdoll);
-            m_Interpreter.RegisterCommandHandler("helpbutton", HelpButton); //not going to implement
-            m_Interpreter.RegisterCommandHandler("guildbutton", GuildButton);
-            m_Interpreter.RegisterCommandHandler("questsbutton", QuestsButton);
-            m_Interpreter.RegisterCommandHandler("logoutbutton", LogoutButton);
-            m_Interpreter.RegisterCommandHandler("virtue", Virtue);
-            m_Interpreter.RegisterCommandHandler("msg", MsgCommand);
-            m_Interpreter.RegisterCommandHandler("partymsg", PartyMsg);
-            m_Interpreter.RegisterCommandHandler("guildmsg", GuildMsg);
-            m_Interpreter.RegisterCommandHandler("allymsg", AllyMsg);
-            m_Interpreter.RegisterCommandHandler("whispermsg", WhisperMsg);
-            m_Interpreter.RegisterCommandHandler("yellmsg", YellMsg);
-            m_Interpreter.RegisterCommandHandler("chatmsg", ChatMsg);
-            m_Interpreter.RegisterCommandHandler("emotemsg", EmoteMsg);
-            m_Interpreter.RegisterCommandHandler("timermsg", TimerMsg);
-
-            m_Interpreter.RegisterCommandHandler("addfriend", AddFriend); //not so much
-            m_Interpreter.RegisterCommandHandler("removefriend", RemoveFriend); // not implemented, use the gui
-
-            m_Interpreter.RegisterCommandHandler("ignoreobject", IgnoreObject);
-            m_Interpreter.RegisterCommandHandler("clearignorelist", ClearIgnoreList);
-            m_Interpreter.RegisterCommandHandler("setskill", SetSkill);
-            m_Interpreter.RegisterCommandHandler("waitforproperties", WaitForProperties);
-            m_Interpreter.RegisterCommandHandler("autocolorpick", AutoColorPick);
-            m_Interpreter.RegisterCommandHandler("waitforcontents", WaitForContents);
-            m_Interpreter.RegisterCommandHandler("miniheal", MiniHeal);
-            m_Interpreter.RegisterCommandHandler("bigheal", BigHeal);
-            m_Interpreter.RegisterCommandHandler("chivalryheal", ChivalryHeal);
-            m_Interpreter.RegisterCommandHandler("waitfortarget", WaitForTarget);
-            m_Interpreter.RegisterCommandHandler("canceltarget", CancelTarget);
-            m_Interpreter.RegisterCommandHandler("cancelautotarget", CancelAutoTarget);
-            m_Interpreter.RegisterCommandHandler("target", Target);
-            m_Interpreter.RegisterCommandHandler("targettype", TargetType);
-            m_Interpreter.RegisterCommandHandler("targetground", TargetGround);
-            m_Interpreter.RegisterCommandHandler("targettile", TargetTile);
-            m_Interpreter.RegisterCommandHandler("targettileoffset", TargetTileOffset);
-            m_Interpreter.RegisterCommandHandler("targettilerelative", TargetTileRelative);
-            m_Interpreter.RegisterCommandHandler("targetresource", TargetResource);
-            m_Interpreter.RegisterCommandHandler("cleartargetqueue", ClearTargetQueue);
-            m_Interpreter.RegisterCommandHandler("warmode", WarMode);
-            m_Interpreter.RegisterCommandHandler("settimer", SetTimer);
-            m_Interpreter.RegisterCommandHandler("removetimer", RemoveTimer);
-            m_Interpreter.RegisterCommandHandler("createtimer", CreateTimer);
-            m_Interpreter.RegisterCommandHandler("getenemy", GetEnemy); //TODO: add "transformations" list
-            m_Interpreter.RegisterCommandHandler("getfriend", GetFriend); //TODO: add "transformations" list
-            m_Interpreter.RegisterCommandHandler("namespace", ManageNamespaces); //TODO: add "transformations" list
-            m_Interpreter.RegisterCommandHandler("script", ManageScripts); //TODO: add "transformations" list
-
-
+            #region uosteam expressions
 
             // Expressions
+
+
+
+
 
             m_Interpreter.RegisterExpressionHandler("movetype", MoveType);
 
@@ -699,32 +819,15 @@ namespace RazorEnhanced.RCE
 
 
             // Player Attributes
-            m_Interpreter.RegisterExpressionHandler("weight", (ASTNode node, Argument[] args, bool quiet) => Player.Weight);
-            m_Interpreter.RegisterExpressionHandler("maxweight", (ASTNode node, Argument[] args, bool quiet) => Player.MaxWeight);
-            m_Interpreter.RegisterExpressionHandler("diffweight", (ASTNode node, Argument[] args, bool quiet) => Player.MaxWeight - Player.Weight);
-            m_Interpreter.RegisterExpressionHandler("mana", (ASTNode node, Argument[] args, bool quiet) => Player.Mana);
-            m_Interpreter.RegisterExpressionHandler("maxmana", (ASTNode node, Argument[] args, bool quiet) => Player.ManaMax);
-            m_Interpreter.RegisterExpressionHandler("stam", (ASTNode node, Argument[] args, bool quiet) => Player.Stam);
-            m_Interpreter.RegisterExpressionHandler("maxstam", (ASTNode node, Argument[] args, bool quiet) => Player.StamMax);
-            m_Interpreter.RegisterExpressionHandler("dex", (ASTNode node, Argument[] args, bool quiet) => Player.Dex);
-            m_Interpreter.RegisterExpressionHandler("int", (ASTNode node, Argument[] args, bool quiet) => Player.Int);
-            m_Interpreter.RegisterExpressionHandler("str", (ASTNode node, Argument[] args, bool quiet) => Player.Str);
             m_Interpreter.RegisterExpressionHandler("physical", (ASTNode node, Argument[] args, bool quiet) => Player.AR);
             m_Interpreter.RegisterExpressionHandler("fire", (ASTNode node, Argument[] args, bool quiet) => Player.FireResistance);
             m_Interpreter.RegisterExpressionHandler("cold", (ASTNode node, Argument[] args, bool quiet) => Player.ColdResistance);
             m_Interpreter.RegisterExpressionHandler("poison", (ASTNode node, Argument[] args, bool quiet) => Player.PoisonResistance);
             m_Interpreter.RegisterExpressionHandler("energy", (ASTNode node, Argument[] args, bool quiet) => Player.EnergyResistance);
 
-            m_Interpreter.RegisterExpressionHandler("followers", (ASTNode node, Argument[] args, bool quiet) => Player.Followers);
-            m_Interpreter.RegisterExpressionHandler("maxfollowers", (ASTNode node, Argument[] args, bool quiet) => Player.FollowersMax);
             m_Interpreter.RegisterExpressionHandler("gold", (ASTNode node, Argument[] args, bool quiet) => Player.Gold);
-            m_Interpreter.RegisterExpressionHandler("hidden", (ASTNode node, Argument[] args, bool quiet) => !Player.Visible);
             m_Interpreter.RegisterExpressionHandler("luck", (ASTNode node, Argument[] args, bool quiet) => Player.Luck);
             m_Interpreter.RegisterExpressionHandler("waitingfortarget", WaitingForTarget); //TODO: loose approximation, see inside
-
-            m_Interpreter.RegisterExpressionHandler("hits", Hits);
-            m_Interpreter.RegisterExpressionHandler("diffhits", DiffHits);
-            m_Interpreter.RegisterExpressionHandler("maxhits", MaxHits);
 
             m_Interpreter.RegisterExpressionHandler("name", Name);
             m_Interpreter.RegisterExpressionHandler("dead", IsDead);
@@ -732,10 +835,7 @@ namespace RazorEnhanced.RCE
             m_Interpreter.RegisterExpressionHandler("directionname", DirectionName);  //Dalamar: Added RE style directions with names
             m_Interpreter.RegisterExpressionHandler("flying", IsFlying);
             m_Interpreter.RegisterExpressionHandler("paralyzed", IsParalyzed);
-            m_Interpreter.RegisterExpressionHandler("poisoned", IsPoisoned);
-            m_Interpreter.RegisterExpressionHandler("mounted", IsMounted);
-            m_Interpreter.RegisterExpressionHandler("yellowhits", YellowHits);
-            m_Interpreter.RegisterExpressionHandler("war", InWarMode);
+
             m_Interpreter.RegisterExpressionHandler("criminal", IsCriminal);
             m_Interpreter.RegisterExpressionHandler("enemy", IsEnemy);
             m_Interpreter.RegisterExpressionHandler("friend", IsFriend);
@@ -769,6 +869,294 @@ namespace RazorEnhanced.RCE
         #endregion
 
         #region Expressions
+
+        /// <summary>
+        /// skill ('name of skill')
+        /// </summary>
+        private IComparable Skill(ASTNode node, Argument[] vars, bool quiet)
+        {
+            if (vars.Length < 1)
+                throw new RCERuntimeError(node, "Usage: skill ('name of skill')");
+            bool force = false;
+
+            if (vars.Length == 2)
+                force = vars[2].AsBool();
+
+            if (World.Player == null)
+                return 0;
+
+            string skillname = vars[0].AsString();
+            double skillvalue = Player.GetSkillValue(skillname);
+
+            if (force)
+                skillvalue = Player.GetRealSkillValue(skillname);
+
+            return skillvalue;
+        }
+
+        /// <summary>
+        /// position (x, y) or position (x, y, z)
+        /// </summary>
+        private IComparable Position(ASTNode node, Argument[] vars, bool quiet)
+        {
+            if (World.Player == null)
+                return false;
+
+            if (vars.Length < 2)
+            {
+                throw new RCERuntimeError(node, "Usage: position (x, y) or position (x, y, z)");
+            }
+
+            int x = vars[0].AsInt();
+            int y = vars[1].AsInt();
+            int z = (vars.Length > 2)
+                ? vars[2].AsInt()
+                : World.Player.Position.Z;
+
+            return World.Player.Position.X == x
+                && World.Player.Position.Y == y
+                && World.Player.Position.Z == z;
+        }
+
+        /// <summary>
+        ///  targetexists (0 = neutral, 1 = harmful, 2 = beneficial, 3 = any)
+        /// </summary>
+        private static IComparable TargetExists(ASTNode node, Argument[] args, bool quiet)
+        {
+            if (args.Length >= 1)
+            {
+                CultureInfo cultureInfo = Thread.CurrentThread.CurrentCulture;
+                TextInfo textInfo = cultureInfo.TextInfo;
+                string targetFlag = textInfo.ToTitleCase(args[0].AsString().ToLower());
+                return RazorEnhanced.Target.HasTarget(targetFlag);
+            }
+            return RazorEnhanced.Target.HasTarget();
+
+        }
+
+        /// <summary>
+        ///  count ('name of counter') OR count ('name of item' OR graphicID) [hue]
+        /// </summary>
+        private static IComparable CountExpression(ASTNode node, Argument[] vars, bool quiet)
+        {
+            return NotImplemented(node, vars, quiet, false);
+            /*
+            if (vars.Length < 1)
+                throw new RCERuntimeError(node, "Usage: count ('name of counter') OR count ('name of item' OR graphicID) [hue]");
+
+            if (World.Player == null)
+                return 0;
+
+            var counter = Counter.FindCounter(vars[0].AsString());
+            if (counter != null)
+            {
+                return counter.Amount;
+            }
+
+            string gfxStr = vars[0].AsString();
+            Serial gfx = Utility.ToUInt16(gfxStr, 0);
+            ushort hue = 0xFFFF;
+
+            if (vars.Length == 2)
+            {
+                hue = Utility.ToUInt16(vars[1].AsString(), 0xFFFF);
+            }
+
+            // No graphic id, maybe searching by name?
+            if (gfx == 0)
+            {
+                var items = CommandHelper.GetItemsByName(gfxStr, true, false, -1);
+
+                return items.Count == 0 ? 0 : Counter.GetCount(items[0].ItemID, hue);
+            }
+
+            return Counter.GetCount(new ItemID((ushort)gfx.Value), hue);
+
+            */
+        }
+
+        /// <summary>
+        ///  insysmsg ('text')
+        /// </summary>
+        private static IComparable InSysMessage(ASTNode node, Argument[] vars, bool quiet)
+        {
+            return NotImplemented(node, vars, quiet, false);
+
+            /*
+            if (vars.Length == 0)
+            {
+                throw new RCERuntimeError(node, "Usage: insysmsg ('text')");
+            }
+
+            string text = vars[0].AsString();
+
+            return SystemMessages.Exists(text);
+            */
+        }
+
+        /// <summary>
+        /// findtype ('name of item'/'graphicID) [inrangecheck (true/false)/backpack] [hue]
+        /// </summary>
+        private static IComparable FindType(ASTNode node, Argument[] vars, bool quiet)
+        {
+            if (vars.Length == 0)
+            {
+                throw new RCERuntimeError(node, "Usage: findtype ('name of item'/'graphicID) [inrangecheck (true/false)/backpack] [hue]");
+            }
+
+            string gfxStr = vars[0].AsString();
+            Serial gfx = Utility.ToUInt16(gfxStr, 0);
+            List<Item> items;
+            List<Mobile> mobiles;
+
+            bool inRangeCheck = false;
+            bool backpack = false;
+            int hue = -1;
+
+            if (vars.Length > 1)
+            {
+                if (vars.Length == 3)
+                {
+                    hue = vars[2].AsInt();
+                }
+
+                if (vars[1].AsString().IndexOf("pack", StringComparison.OrdinalIgnoreCase) > 0)
+                {
+                    backpack = true;
+                }
+                else
+                {
+                    inRangeCheck = vars[1].AsBool();
+                }
+            }
+
+            // No graphic id, maybe searching by name?
+            if (gfx == 0)
+            {
+                items = CommandHelper.GetItemsByName(gfxStr, backpack, inRangeCheck, hue);
+
+                if (items.Count == 0) // no item found, search mobile by name
+                {
+                    mobiles = CommandHelper.GetMobilesByName(gfxStr, inRangeCheck);
+
+                    if (mobiles.Count > 0)
+                    {
+                        return mobiles[Utility.Random(mobiles.Count)].Serial;
+                    }
+                }
+                else
+                {
+                    return items[Utility.Random(items.Count)].Serial;
+                }
+            }
+            else // Provided graphic id for type, check backpack first (same behavior as DoubleClickAction in macros
+            {
+                ushort id = Utility.ToUInt16(gfxStr, 0);
+
+                items = CommandHelper.GetItemsById(id, backpack, inRangeCheck, hue);
+
+                // Still no item? Mobile check!
+                if (items.Count == 0)
+                {
+                    mobiles = CommandHelper.GetMobilesById(id, inRangeCheck);
+
+                    if (mobiles.Count > 0)
+                    {
+                        return mobiles[Utility.Random(mobiles.Count)].Serial;
+                    }
+                }
+                else
+                {
+                    return items[Utility.Random(items.Count)].Serial;
+                }
+            }
+
+            return Serial.Zero;
+        }
+
+
+        /// <summary>
+        /// findbuff/finddebuff ('name of buff')
+        /// </summary>
+        private static IComparable FindBuffDebuff(ASTNode node, Argument[] vars, bool quiet)
+        {
+            if (vars.Length == 0)
+            {
+                throw new RCERuntimeError(node, "Usage: findbuff/finddebuff ('name of buff')");
+            }
+
+            string name = vars[0].AsString();
+
+            foreach (BuffDebuff buff in World.Player.BuffsDebuffs)
+            {
+                if (buff.ClilocMessage1.IndexOf(name, StringComparison.OrdinalIgnoreCase) != -1)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// varexist ('name')
+        /// </summary>
+        private IComparable VarExist(ASTNode node, Argument[] vars, bool quiet)
+        {
+            if (vars.Length != 1)
+            {
+                throw new RCERuntimeError(node, "Usage: varexist ('name')");
+            }
+
+            if (vars.Length == 1)
+            {
+                string alias = vars[0].AsString();
+                return Interpreter.FindAlias(alias);
+            }
+
+
+            return false;
+        }
+
+        /// <summary>
+        /// poplist ('list name') ('element value'/'front'/'back')
+        /// </summary>
+        private static IComparable PopListExp(ASTNode node, Argument[] args, bool quiet)
+        {
+            if (args.Length != 2)
+                throw new RCERuntimeError(node, "Usage: poplist ('list name') ('element value'/'front'/'back')");
+
+            var listName = args[0].AsString();
+            var frontBackOrElementVar = args[1];
+            var isFrontOrBack = frontBackOrElementVar.AsString() == "front" || frontBackOrElementVar.AsString() == "back";
+
+            if (isFrontOrBack)
+            {
+                var isFront = frontBackOrElementVar.AsString() == "front";
+
+                Interpreter.PopList(listName, isFront, out var popped);
+                return popped.AsSerial();
+            }
+
+            var evaluatedVar = new Variable(frontBackOrElementVar.AsString());
+
+            if (force)
+            {
+                while (Interpreter.PopList(listName, evaluatedVar)) { }
+                return Serial.Zero;
+            }
+
+            Interpreter.PopList(listName, evaluatedVar);
+            return evaluatedVar.AsSerial();
+        }
+
+
+
+
+
+
+
+
 
 
         /// <summary>
@@ -860,10 +1248,6 @@ namespace RazorEnhanced.RCE
 
             return false;
         }
-
-
-
-
 
 
         /// <summary>
@@ -1104,7 +1488,7 @@ namespace RazorEnhanced.RCE
         /// <summary>
         /// findtype (graphic) [color] [source] [amount] [range or search level]
         /// </summary>
-        private IComparable FindType(ASTNode node, Argument[] args, bool quiet)
+        private IComparable FindTypes(ASTNode node, Argument[] args, bool quiet)
         {
             if (args.Length < 1)
             {
@@ -1331,28 +1715,6 @@ namespace RazorEnhanced.RCE
             return false;
         }
 
-        /// <summary>
-        /// poisoned [serial]
-        /// </summary>
-        private static IComparable IsPoisoned(ASTNode node, Argument[] args, bool quiet)
-        {
-
-            if (args.Length == 0)
-            {
-                return Player.Poisoned;
-            }
-            else if (args.Length >= 1)
-            {
-                uint serial = args[0].AsSerial();
-                Mobile theMobile = Mobiles.FindBySerial((int)serial);
-                if (theMobile != null)
-                {
-                    return theMobile.Poisoned;
-                }
-            }
-
-            return false;
-        }
 
         /// <summary>
         /// name [serial]
@@ -1520,23 +1882,6 @@ namespace RazorEnhanced.RCE
             if (theMobile != null)
             {
                 return theMobile.Paralized;
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// mounted [serial]
-        /// </summary>
-        private static IComparable IsMounted(ASTNode node, Argument[] args, bool quiet)
-        {
-            if (args.Length == 0)
-            {
-                return Player.Mount != null;
-            }
-            Mobile theMobile = Mobiles.FindBySerial((int)args[0].AsSerial());
-            if (theMobile != null)
-            {
-                return theMobile.Mount != null;
             }
             return false;
         }
@@ -1845,21 +2190,7 @@ namespace RazorEnhanced.RCE
         }
 
 
-        /// <summary>
-        /// skill ('name') (operator) (value)
-        /// </summary>
-        private static IComparable Skill(ASTNode node, Argument[] args, bool quiet)
-        {
-            if (args.Length < 1)
-            {
-                throw new RCERuntimeError(node, "Skill requires parameters");
-                // return false;
-            }
 
-            string skillname = args[0].AsString();
-            double skillvalue = Player.GetSkillValue(skillname);
-            return skillvalue;
-        }
 
         /// <summary>
         /// amount (serial)
@@ -2181,20 +2512,7 @@ namespace RazorEnhanced.RCE
             return m_Interpreter.TimerExists(args[0].AsString());
         }
 
-        /// <summary>
-        ///  targetexists ('Any' | 'Harmful' | 'Neutral' | 'Beneficial')
-        /// </summary>
-        private static IComparable TargetExists(ASTNode node, Argument[] args, bool quiet)
-        {
-            if (args.Length >= 1)
-            {
-                CultureInfo cultureInfo = Thread.CurrentThread.CurrentCulture;
-                TextInfo textInfo = cultureInfo.TextInfo;
-                string targetFlag = textInfo.ToTitleCase(args[0].AsString().ToLower());
-                return RazorEnhanced.Target.HasTarget(targetFlag);
-            }
-            return RazorEnhanced.Target.HasTarget();
-        }
+
 
         /// <summary>
         ///  waitingfortarget POORLY IMPLEMENTED
@@ -2206,89 +2524,8 @@ namespace RazorEnhanced.RCE
             return RazorEnhanced.Target.HasTarget();
         }
 
-        /// <summary>
-        /// hits [serial]
-        /// </summary>
-        private static IComparable Hits(ASTNode node, Argument[] args, bool quiet)
-        {
-            if (args.Length == 0)
-            {
-                return Player.Hits;
-            }
-            else if (args.Length >= 1)
-            {
-                uint serial = args[0].AsSerial();
-                if (serial == Player.Serial)
-                {
-                    return Player.Hits;
-                }
 
-                Mobile theMobile = Mobiles.FindBySerial((int)serial);
-                if (theMobile != null)
-                {
-                    return theMobile.Hits * 4; // convert to 100 base
-                }
-            }
 
-            return false;
-
-            // return Player.Hits;
-        }
-
-        /// <summary>
-        /// diffhits [serial]
-        /// </summary>
-        private static IComparable DiffHits(ASTNode node, Argument[] args, bool quiet)
-        {
-            if (args.Length == 0)
-            {
-                return (Player.HitsMax - Player.Hits);
-            }
-            else if (args.Length >= 1)
-            {
-                uint serial = args[0].AsSerial();
-                if (serial == Player.Serial)
-                {
-                    return (Player.HitsMax - Player.Hits);
-                }
-
-                Mobile theMobile = Mobiles.FindBySerial((int)serial);
-                if (theMobile != null)
-                {
-                    return (theMobile.HitsMax - theMobile.Hits) * 4; // scale it to 100 
-                }
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// maxhits [serial]
-        /// </summary>
-        private static IComparable MaxHits(ASTNode node, Argument[] args, bool quiet)
-        {
-            if (args.Length == 0)
-            {
-                return Player.HitsMax;
-            }
-            else if (args.Length >= 1)
-            {
-                uint serial = args[0].AsSerial();
-                if (serial == Player.Serial)
-                {
-                    return Player.HitsMax;
-                }
-
-                Mobile theMobile = Mobiles.FindBySerial((int)serial);
-                if (theMobile != null)
-                {
-                    return theMobile.HitsMax * 4;
-                }
-            }
-
-            return false;
-
-        }
 
         #endregion
 
@@ -3297,21 +3534,882 @@ namespace RazorEnhanced.RCE
             return false;
         }
 
+        private static readonly string[] Abilities = { "primary", "secondary", "stun", "disarm" };
+
+        /// <summary>
+        /// setability ('primary'/'secondary'/'stun'/'disarm') ['on'/'off']
+        /// </summary>
+        private static bool SetAbility(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            if (vars.Length < 1 || !Abilities.Contains(vars[0].AsString()))
+            {
+                throw new RCERuntimeError(node, "Usage: setability ('primary'/'secondary'/'stun'/'disarm') ['on'/'off']");
+            }
+
+            if (vars.Length == 2 && vars[1].AsString() == "on" || vars.Length == 1)
+            {
+                switch (vars[0].AsString())
+                {
+                    case "primary":
+                        Player.WeaponPrimarySA();
+                        break;
+                    case "secondary":
+                        Player.WeaponSecondarySA();
+                        break;
+                    case "stun":
+                        Player.WeaponStunSA();
+                        break;
+                    case "disarm":
+                        Player.WeaponDisarmSA();
+                        break;
+                }
+            }
+            else if (vars.Length == 2 && vars[1].AsString() == "off")
+            {
+                Assistant.Client.Instance.SendToServer(new UseAbility(AOSAbility.Clear));
+                Assistant.Client.Instance.SendToClient(ClearAbility.Instance);
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// setlasttarget ('serial')
+        /// </summary>
+        private static bool SetLastTarget(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            if (vars.Length == 0)
+            {
+                throw new RCERuntimeError(node, "Usage: setlasttarget ('serial')");
+            }
+
+            Serial serial = vars[0].AsSerial();
+
+            if (serial != Serial.Zero)
+            {
+                RazorEnhanced.Target.SetLast(serial);
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// setlasttarget ('serial')
+        /// </summary>
+        private static bool LastTarget(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            if (!Targeting.DoLastTarget())
+                Targeting.ResendTarget();
+
+            return true;
+        }
+
+        /// <summary>
+        /// skill ('skill name'/'last')
+        /// </summary>
+        private bool UseSkill(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            if (vars.Length == 0)
+            {
+                throw new RCERuntimeError(node, "Usage: skill ('skill name'/'last')");
+            }
+
+            int skillId = 0;
+
+            if (World.Player.LastSkill != -1)
+            {
+                skillId = World.Player.LastSkill;
+            }
+
+            if (vars[0].AsString() == "last")
+            {
+                Assistant.Client.Instance.SendToServer(new UseSkill(World.Player.LastSkill));
+            }
+            else if (vars.Length == 1)
+            {
+                string skill = vars[0].AsString();
+                Player.UseSkill(skill);
+            }
+            else if (vars.Length == 2)
+            {
+                string skill = vars[0].AsString();
+                int serial = (int)vars[1].AsSerial();
+                Player.UseSkill(skill, serial);
+            }
+           
+            /*
+            if (vars[0].AsString() == "Stealth" && !World.Player.Visible)
+            {
+                StealthSteps.Hide();
+            } */
+
+            return true;
+        }
+
+        /// <summary>
+        /// walk ('direction')
+        /// </summary>
+        private static bool Walk(ASTNode node, Argument[] var, bool quiet, bool force)
+        {
+
+            if (var.Length == 0)
+                Player.Walk(Player.Direction);
+
+            if (var.Length == 1)
+            {
+                string direction = var[0].AsString().ToLower();
+                if (!map.ContainsKey(direction))
+                {
+                    throw new RCEArgumentError(node, var[0].AsString() + " not recognized.");
+                }
+                direction = map[direction];
+                if (Player.Direction != direction)
+                    Player.Walk(direction);
+                Player.Walk(direction);
+            }
+
+            /*
+            if (vars.Length < 1)
+            {
+                throw new RCERuntimeError(node, "Usage: walk ('direction')");
+            }
+
+            if (ScriptManager.LastWalk + TimeSpan.FromSeconds(0.4) >= DateTime.UtcNow)
+            {
+                return false;
+            }
+
+            ScriptManager.LastWalk = DateTime.UtcNow;
+
+            Direction dir = (Direction)Enum.Parse(typeof(Direction), vars[0].AsString(), true);
+            Client.Instance.RequestMove(dir);
+            */
+
+            return true;
+        }
+
+        private static readonly Dictionary<string, ushort> PotionList = new Dictionary<string, ushort>()
+        {
+            {"heal", 3852},
+            {"cure", 3847},
+            {"refresh", 3851},
+            {"nightsight", 3846},
+            {"ns", 3846},
+            {"explosion", 3853},
+            {"strength", 3849},
+            {"str", 3849},
+            {"agility", 3848}
+        };
+
+        /// <summary>
+        /// potion ('type')
+        /// </summary>
+        private bool Potion(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            if (vars.Length == 0)
+            {
+                throw new RCERuntimeError(node, "Usage: potion ('type')");
+            }
+
+            Assistant.Item pack = World.Player.Backpack;
+            if (pack == null)
+                return true;
+
+            if (PotionList.TryGetValue(vars[0].AsString().ToLower(), out ushort potionId))
+            {
+                if (potionId == 3852 && World.Player.Poisoned && RazorEnhanced.Settings.General.ReadBool("BlockHealPoison") &&
+                    Assistant.Client.Instance.AllowBit(FeatureBit.BlockHealPoisoned))
+                {
+                    World.Player.SendMessage(MsgLevel.Force, LocString.HealPoisonBlocked);
+                    return true;
+                }
+
+                if (!World.Player.UseItem(pack, potionId))
+                {
+                    SendError(Language.Format(LocString.NoItemOfType, (TypeID)potionId));
+                }
+            }
+            else
+            {
+                throw new RCERuntimeError(node, $" Unknown potion type");
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// script 'name of script'
+        /// </summary>
+        private static bool PlayScript(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            if (vars.Length < 1)
+            {
+                throw new RCERuntimeError(node, "Usage: script 'name of script'");
+            }
+
+            Misc.ScriptRun(vars[0].AsString());
+
+            return true;
+        }
+
+        /// <summary>
+        /// setvar ('variable') [serial] [timeout]
+        /// </summary>
+        private bool SetVar(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            if (vars.Length < 1 || vars.Length > 2)
+            {
+                throw new RCERuntimeError(node, "Usage: setvar ('variable') [serial] [timeout]");
+            }
+
+            if (vars.Length == 1)
+            {
+                return PromptAlias(node, vars, quiet, force);
+            }
+            if (vars.Length == 2)
+            {
+                string alias = vars[0].AsString();
+                uint value = vars[1].AsSerial();
+                m_Interpreter.SetAlias(alias, value);
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// unsetvar ('name')
+        /// </summary>
+        private bool UnsetVar(ASTNode node, Argument[] args, bool quiet, bool force)
+        {
+            if (args.Length != 1)
+                throw new RCERuntimeError(node, "Usage: unsetvar ('name')");
+
+            if (args.Length == 1)
+            {
+                string alias = args[0].AsString();
+                m_Interpreter.UnSetAlias(alias);
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// stop
+        /// </summary>
+        private static bool Stop(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            Misc.ScriptStopAll();
+
+            return true;
+        }
+
+        /// <summary>
+        /// scriptstop 'name of script'
+        /// </summary>
+        private static bool ScriptStop(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+
+            if (vars.Length < 1)
+            {
+                throw new RCERuntimeError(node, "Usage: scriptstop 'name of script'");
+            }
+
+            Misc.ScriptStop(vars[0].AsString());
+
+            return true;
+        }
+
+        /// <summary>
+        /// clearall
+        /// </summary>
+        private static bool ClearAll(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+
+            Assistant.DragDropManager.Clear(); // clear drag/drop queue
+            RazorEnhanced.Target.Cancel(); // clear target queue & cancel current target
+            Assistant.DragDropManager.DropCurrent(); // drop what you are currently holding
+
+            return true;
+        }
+
+        /// <summary>
+        /// random 'max value'
+        /// </summary>
+        private static bool Random(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            if (vars.Length < 1)
+            {
+                throw new RCERuntimeError(node, "Usage: random 'max value'");
+            }
+
+            int max = vars[0].AsInt();
+
+            World.Player.SendMessage(MsgLevel.Info, $"Random: {Utility.Random(1, max)}");
+
+            return true;
+        }
+
+        /// <summary>
+        /// cleardragdrop
+        /// </summary>
+        private static bool ClearDragDrop(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            Assistant.DragDropManager.Clear(); // clear drag/drop queue
+
+            return true;
+        }
+
+        /// <summary>
+        /// interrupt 'layer'(optional)
+        /// </summary>
+        private static bool Interrupt(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            if (vars.Length == 1)
+            {
+                Layer layer = (Layer)Enum.Parse(typeof(Layer), vars[0].AsString(), true);
+
+                if (layer > Layer.Invalid && layer <= Layer.LastUserValid)
+                {
+                    //Spells.Interrupt(layer);
+
+                    Assistant.Item item = World.Player.GetItemOnLayer(layer);
+
+                    if (item != null)
+                    {
+                        Assistant.Client.Instance.SendToServer(new LiftRequest(item, 1)); // unequip
+                        Assistant.Client.Instance.SendToServer(new EquipRequest(item.Serial, World.Player, item.Layer)); // Equip
+                    }
+                }
+                else
+                {
+                    throw new RCERuntimeError(node, $" Invalid layer");
+                }
+            }
+            else
+            {
+                Spells.Interrupt();
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// sound (serial)
+        /// </summary>
+        private static bool Sound(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            if (vars.Length != 1)
+            {
+                throw new RCERuntimeError(node, "Usage: sound (serial)");
+            }
+
+            Assistant.Client.Instance.SendToClient(new PlaySound(vars[0].AsInt(), Player.Position.X ,Player.Position.Y, Player.Position.Z));
+
+            return true;
+        }
+
+        /// <summary>
+        /// music (id)
+        /// </summary>
+        private static bool Music(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            if (vars.Length != 1)
+            {
+                throw new RCERuntimeError(node, "Usage: music (id)");
+            }
+
+            Assistant.Client.Instance.SendToClient(new PlayMusic(vars[0].AsUShort()));
+
+            return true;
+        }
+
+        /// <summary>
+        /// cuo (setting) (value)
+        /// </summary>
+        private static bool ClassicUOProfile(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            return NotImplemented(node, vars, quiet, force);
+
+            if (vars.Length != 2)
+            {
+                throw new RCERuntimeError(node, "Usage: cuo (setting) (value)");
+            }
+            /*
+            string property = ClassicUOManager.IsValidProperty(vars[0].AsString());
+
+            if (string.IsNullOrEmpty(property))
+            {
+                throw new RCERuntimeError(node, "Unknown ClassicUO setting/property. Type `>cuo list` for a list of valid settings.");
+            }
+
+            bool isNumeric = int.TryParse(vars[0].AsString(), out var value);
+
+            if (isNumeric)
+            {
+                ClassicUOManager.ProfilePropertySet(property, value);
+            }
+            else
+            {
+                switch (vars[1].AsString())
+                {
+                    case "true":
+                        ClassicUOManager.ProfilePropertySet(property, true);
+                        break;
+                    case "false":
+                        ClassicUOManager.ProfilePropertySet(property, false);
+                        break;
+                    default:
+                        ClassicUOManager.ProfilePropertySet(property, vars[1].AsString());
+                        break;
+                }
+            }
+
+            CommandHelper.SendMessage($"ClassicUO Setting: '{property}' set to '{vars[1].AsString()}'", quiet);
+
+            return true;
+            */
+        }
+
+        /// <summary>
+        /// rename (serial) (new_name)
+        /// </summary>
+        private bool Rename(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            if (vars.Length < 2)
+            {
+                throw new RCERuntimeError(node, "Usage: rename (serial) (new_name)");
+            }
+
+            string newName = vars[1].AsString();
+
+            if (newName.Length < 1)
+            {
+                throw new RCERuntimeError(node, "Mobile name must be longer than one character");
+            }
+
+            if (World.Mobiles.TryGetValue(vars[0].AsSerial(), out var follower))
+            {
+                if (follower.CanRename)
+                {
+                    Misc.PetRename(follower.Serial, newName);
+                }
+                else
+                {
+                    SendError("Unable to rename mobile");
+                }
+            }
+
+            return true;
+        }
+
+        private enum GetLabelState
+        {
+            None,
+            WaitingForFirstLabel,
+            WaitingForRemainingLabels
+        };
+
+        private static GetLabelState _getLabelState = GetLabelState.None;
+        private static Action<Packet, PacketHandlerEventArgs, Serial, ushort, MessageType, ushort, ushort, string, string, string> _onLabelMessage;
+        private static Action _onStop;
+
+        /// <summary>
+        /// getlabel (serial) (name)
+        /// </summary>
+        private static bool GetLabel(ASTNode node, Argument[] args, bool quiet, bool force)
+        {
+            return NotImplemented(node, args, quiet, force);
+
+            /*
+            if (args.Length != 2)
+                throw new RCERuntimeError(node, "Usage: getlabel (serial) (name)");
+
+            var serial = args[0].AsSerial();
+            var name = args[1].AsString();
+
+            var mobile = World.FindMobile(serial);
+            if (mobile != null)
+            {
+                if (mobile.IsHuman)
+                {
+                    return false;
+                }
+            }
+
+            switch (_getLabelState)
+            {
+                case GetLabelState.None:
+                    _getLabelState = GetLabelState.WaitingForFirstLabel;
+                    Interpreter.Timeout(2000, () =>
+                    {
+                        MessageManager.OnLabelMessage -= _onLabelMessage;
+                        _onLabelMessage = null;
+                        Interpreter.OnStop -= _onStop;
+                        _getLabelState = GetLabelState.None;
+                        MessageManager.GetLabelCommand = false;
+                        return true;
+                    });
+
+                    // Single click the object
+                    Assistant.Client.Instance.SendToServer(new SingleClick((Serial)args[0].AsSerial()));
+
+                    // Capture all message responses
+                    StringBuilder label = new StringBuilder();
+
+                    // Some messages from Outlands server are send in sequence of LabelType and RegularType
+                    // so we want to invoke that _onLabelMessage in both cases with delays
+                    MessageManager.GetLabelCommand = true;
+
+                    // Reset the state when script is stopped
+                    _onStop = () =>
+                    {
+                        if (_onLabelMessage != null)
+                        {
+                            MessageManager.OnLabelMessage -= _onLabelMessage;
+                            _onLabelMessage = null;
+                        }
+                        _getLabelState = GetLabelState.None;
+
+                        Interpreter.OnStop -= _onStop;
+                        MessageManager.GetLabelCommand = false;
+                    };
+
+                    _onLabelMessage = (p, a, source, graphic, type, hue, font, lang, sourceName, text) =>
+                    {
+                        if (source != serial)
+                            return;
+
+                        a.Block = true;
+
+                        if (_getLabelState == GetLabelState.WaitingForFirstLabel)
+                        {
+                            // After the first message, switch to a pause instead of a timeout.
+                            _getLabelState = GetLabelState.WaitingForRemainingLabels;
+                            Interpreter.Pause(500);
+                        }
+
+                        label.Append(" " + text);
+
+                        Interpreter.SetVariable(name, label.ToString().Trim());
+                    };
+
+                    Interpreter.OnStop += _onStop;
+                    MessageManager.OnLabelMessage += _onLabelMessage;
+
+                    break;
+                case GetLabelState.WaitingForFirstLabel:
+                    break;
+                case GetLabelState.WaitingForRemainingLabels:
+                    // We get here after the pause has expired.
+                    Interpreter.OnStop -= _onStop;
+                    MessageManager.OnLabelMessage -= _onLabelMessage;
+
+                    _onLabelMessage = null;
+                    _getLabelState = GetLabelState.None;
+
+                    MessageManager.GetLabelCommand = false;
+
+                    return true;
+            }
+
+            */
+            return false;
+        }
+
+        /// <summary>
+        /// ignore (serial)
+        /// </summary>
+        private static bool AddIgnore(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            if (vars.Length != 1)
+                throw new RCERuntimeError(node, "Usage: ignore (serial)");
+
+            uint serial = vars[0].AsSerial();
+            Misc.IgnoreObject((int)serial);
+
+            /*
+            Variable toIgnore = vars[0];
+            string ignoreListName = vars[0].AsString();
+
+            if (Interpreter.ListExists(ignoreListName))
+            {
+                List<Serial> list = Interpreter.GetList(ignoreListName).Select(v => (Serial)v.AsSerial()).ToList();
+                Interpreter.AddIgnoreRange(list);
+                CommandHelper.SendMessage($"Added {list.Count} entries to ignore list", quiet);
+            }
+            else
+            {
+                uint serial = toIgnore.AsSerial();
+                Interpreter.AddIgnore(serial);
+                CommandHelper.SendMessage($"Added {serial} to ignore list", quiet);
+            }
+            */
+
+            return true;
+        }
+
+        /// <summary>
+        /// unignore (serial or list)
+        /// </summary>
+        private static bool RemoveIgnore(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            if (vars.Length != 1)
+                throw new RCERuntimeError(node, "Usage: unignore (serial or list)");
 
 
+            uint serial = vars[0].AsSerial();
+            Misc.UnIgnoreObject((int)serial);
+            
+            /*
+            Variable toIgnore = vars[0];
+            string ignoreListName = toIgnore.AsString();
+
+            if (Interpreter.ListExists(ignoreListName))
+            {
+                List<Serial> list = Interpreter.GetList(ignoreListName).Select(v => (Serial)v.AsSerial()).ToList();
+                Interpreter.RemoveIgnoreRange(list);
+                CommandHelper.SendMessage($"Removed {list.Count} entries from ignore list", quiet);
+            }
+            else
+            {
+                uint serial = toIgnore.AsSerial();
+                Interpreter.RemoveIgnore(serial);
+                CommandHelper.SendMessage($"Removed {serial} from ignore list", quiet);
+            }
+            */
+
+            return true;
+        }
+
+        /// <summary>
+        /// clearignore
+        /// </summary>
+        private static bool ClearIgnore(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            Misc.ClearIgnore();
+            if (!quiet)
+                Misc.SendMessage("Ignore List cleared");
+
+            return true;
+        }
+
+        /// <summary>
+        /// cooldown ('name') ('seconds') ['hue'] ['icon'] ['sound'] ['stay visible'] ['foreground color'] ['background color']
+        /// </summary>
+        private static bool Cooldown(ASTNode node, Argument[] vars, bool quiet, bool force)
+        {
+            return NotImplemented(node, vars, quiet, force);
+
+            /*
+            if (vars.Length < 2)
+            {
+                throw new RCERuntimeError(node, "Usage: cooldown ('name') ('seconds') ['hue'] ['icon'] ['sound'] ['stay visible'] ['foreground color'] ['background color']");
+            }
+
+            string name = vars[0].AsString();
+            int seconds = vars[1].AsInt();
+
+            int hue = 0, sound = 0;
+            string icon = "none";
+            bool stay = false;
+
+            Color foreColor = Color.Empty;
+            Color backColor = Color.Empty;
+
+            switch (vars.Length)
+            {
+                case 3:
+                    hue = vars[2].AsInt();
+
+                    break;
+                case 4:
+                    hue = vars[2].AsInt();
+                    icon = vars[3].AsString();
+
+                    break;
+                case 5:
+                    hue = vars[2].AsInt();
+                    icon = vars[3].AsString();
+                    sound = vars[4].AsInt();
+
+                    break;
+                case 6:
+                    hue = vars[2].AsInt();
+                    icon = vars[3].AsString();
+                    sound = vars[4].AsInt();
+                    stay = vars[5].AsBool();
+
+                    break;
+                case 7:
+                    hue = vars[2].AsInt();
+                    icon = vars[3].AsString();
+                    sound = vars[4].AsInt();
+                    stay = vars[5].AsBool();
+
+                    foreColor = Color.FromName(vars[6].AsString());
+
+                    break;
+                case 8:
+                    hue = vars[2].AsInt();
+                    icon = vars[3].AsString();
+                    sound = vars[4].AsInt();
+                    stay = vars[5].AsBool();
+
+                    foreColor = Color.FromName(vars[6].AsString());
+                    backColor = Color.FromName(vars[7].AsString());
+
+                    break;
+            }
+
+            CooldownManager.AddCooldown(new Cooldown
+            {
+                Name = name,
+                EndTime = DateTime.UtcNow.AddSeconds(seconds),
+                Hue = hue,
+                Icon = icon.Equals("0") ? 0 : BuffDebuffManager.GetGraphicId(icon),
+                Seconds = seconds,
+                SoundId = sound,
+                StayVisible = stay,
+                ForegroundColor = foreColor,
+                BackgroundColor = backColor
+            });
+
+            */
+
+            return true;
+        }
+
+        /// <summary>
+        /// poplist ('list name') ('element value'/'front'/'back')
+        /// </summary>
+        private bool PopList(ASTNode node, Argument[] args, bool quiet, bool force)
+        {
+            if (args.Length != 2)
+                throw new RCERuntimeError( node, "Usage: poplist ('list name') ('element value'/'front'/'back')");
+
+            string frontBack = args[1].AsString().ToLower();
+            return m_Interpreter.PopList(args[0].AsString(), (frontBack == "front"));
+        }
+
+        /// <summary>
+        /// pushlist ('list name') ('element value') ['front'/'back']
+        /// </summary>
+        private bool PushList(ASTNode node, Argument[] args, bool quiet, bool force)
+        {
+            if (args.Length < 2 || args.Length > 3)
+                throw new RCERuntimeError(node, "Usage: pushlist ('list name') ('element value') ['front'/'back']");
+
+            string listName = args[0].AsString();
+            string frontBack = "back";
+            if (args.Length == 3)
+            {
+                frontBack = args[2].AsString().ToLower();
+            }
+
+            uint resolvedAlias = m_Interpreter.GetAlias(args[1].AsString());
+            Argument insertItem = args[1];
+            if (resolvedAlias == uint.MaxValue)
+            {
+                Utility.Logger.Debug("Pushing {0} to list {1}", insertItem.AsString(), listName);
+                m_Interpreter.PushList(listName, insertItem, (frontBack == "front"), false);
+            }
+            else
+            {
+                ASTNode node_int = new ASTNode(ASTNodeType.INTEGER, resolvedAlias.ToString(), insertItem.Node, insertItem.Node.LineNumber);
+                Argument newArg = new Argument(insertItem._script, node_int);
+                Utility.Logger.Debug("Pushing {0} to list {1}", newArg.AsString(), listName);
+                m_Interpreter.PushList(listName, newArg, (frontBack == "front"), false);
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// removelist ('list name')
+        /// </summary>
+        private bool RemoveList(ASTNode node, Argument[] args, bool quiet, bool force)
+        {
+            if (args.Length != 1)
+                throw new RCERuntimeError(node, "Usage: removelist ('list name')");
+
+            Interpreter.DestroyList(args[0].AsString());
+
+            return true;
+        }
+
+        /// <summary>
+        /// createlist ('list name')
+        /// </summary>
+        private bool CreateList(ASTNode node, Argument[] args, bool quiet, bool force)
+        {
+            if (args.Length != 1)
+                throw new RCERuntimeError(node, "Usage: createlist ('list name')");
+
+            Interpreter.CreateList(args[0].AsString());
+
+            return true;
+        }
+
+        /// <summary>
+        /// clearlist ('list name')
+        /// </summary>
+        private bool ClearList(ASTNode node, Argument[] args, bool quiet, bool force)
+        {
+            if (args.Length != 1)
+                throw new RCERuntimeError(node, "Usage: clearlist ('list name')");
+
+            Interpreter.ClearList(args[0].AsString());
+
+            return true;
+        }
+
+        /// <summary>
+        /// settimer (timer name) (value)
+        /// </summary>
+        private bool SetTimer(ASTNode node, Argument[] args, bool quiet, bool force)
+        {
+            if (args.Length != 2)
+                throw new RCERuntimeError(node, "Usage: settimer (timer name) (value)");
 
 
+            Interpreter.SetTimer(args[0].AsString(), args[1].AsInt());
+            return true;
+        }
 
+        /// <summary>
+        /// removetimer (timer name)
+        /// </summary>
+        private bool RemoveTimer(ASTNode node, Argument[] args, bool quiet, bool force)
+        {
+            if (args.Length != 1)
+                throw new RCERuntimeError(node, "Usage: removetimer (timer name)");
 
+            Interpreter.RemoveTimer(args[0].AsString());
+            return true;
+        }
 
+        /// <summary>
+        /// createtimer (timer name)
+        /// </summary>
+        private bool CreateTimer(ASTNode node, Argument[] args, bool quiet, bool force)
+        {
+            if (args.Length != 1)
+                throw new RCERuntimeError(node, "Usage: createtimer (timer name)");
 
+            Interpreter.CreateTimer(args[0].AsString());
+            return true;
+        }
 
-
-
-
-
-
-
+        private bool PromptAlias(ASTNode node, Argument[] args, bool quiet, bool force)
+        {
+            if (args.Length == 1)
+            {
+                string alias = args[0].AsString();
+                RazorEnhanced.Target target = new RazorEnhanced.Target();
+                int value = target.PromptTarget("Target Alias for " + alias);
+                m_Interpreter.SetAlias(alias, (uint)value);
+            }
+            return true;
+        }
 
 
 
@@ -3344,73 +4442,6 @@ namespace RazorEnhanced.RCE
             return true;
         }
 
-        /// RazorCeEngine.SetAbility
-        /// <summary>
-        /// setability ('primary'/'secondary'/'stun'/'disarm') ['on'/'off']
-        /// </summary>
-        private bool SetAbility(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
-            if (args.Length < 2)
-            {
-                SendError("set ability not proper syntax");
-                return true;
-            }
-            string ability = args[0].AsString().ToLower();
-            bool on = args[1].AsBool();
-
-            switch (ability)
-            {
-                case "primary":
-                    if (on)
-                    {
-                        Player.WeaponPrimarySA();
-                    }
-                    else
-                    {
-                        // I dunno how to turn off
-                        Player.WeaponPrimarySA();
-                    }
-                    break;
-                case "secondary":
-                    if (on)
-                    {
-                        Player.WeaponSecondarySA();
-                    }
-                    else
-                    {
-                        // I dunno how to turn off
-                        Player.WeaponSecondarySA();
-                    }
-                    break;
-                case "stun":
-                    if (on)
-                    {
-                        Player.WeaponStunSA();
-                    }
-                    else
-                    {
-                        // I dunno how to turn off
-                        Player.WeaponStunSA();
-                    }
-                    break;
-                case "disarm":
-                    if (on)
-                    {
-                        Player.WeaponDisarmSA();
-                    }
-                    else
-                    {
-                        // I dunno how to turn off
-                        Player.WeaponDisarmSA();
-                    }
-                    break;
-                default:
-                    return true;
-            }
-
-            return true;
-        }
-
 
 
 
@@ -3430,30 +4461,6 @@ namespace RazorEnhanced.RCE
                 {"northeast", "Right" },
                 {"right", "Right" },
             };
-
-        /// <summary>
-        /// walk (direction)
-        /// </summary>
-        private static bool Walk(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
-            if (args.Length == 0)
-                Player.Walk(Player.Direction);
-
-            if (args.Length == 1)
-            {
-                string direction = args[0].AsString().ToLower();
-                if (!map.ContainsKey(direction))
-                {
-                    throw new RCEArgumentError(node, args[0].AsString() + " not recognized.");
-                }
-                direction = map[direction];
-                if (Player.Direction != direction)
-                    Player.Walk(direction);
-                Player.Walk(direction);
-            }
-
-            return true;
-        }
 
         /// <summary>
         /// pathfindto x y
@@ -3565,9 +4572,6 @@ namespace RazorEnhanced.RCE
             return true;
         }
 
-
-
-
         /// <summary>
         /// useonce (graphic) [color]
         /// </summary>
@@ -3659,28 +4663,6 @@ namespace RazorEnhanced.RCE
             return true;
         }
 
-        /// <summary>
-        /// useskill ('skill name'/'last')
-        /// </summary>
-        private bool UseSkill(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
-            if (args.Length == 1)
-            {
-                string skill = args[0].AsString();
-                Player.UseSkill(skill);
-            }
-            else if (args.Length == 2)
-            {
-                string skill = args[0].AsString();
-                int serial = (int)args[1].AsSerial();
-                Player.UseSkill(skill, serial);
-            }
-            else
-            {
-                SendError("Incorrect number of parameters");
-            }
-            return true;
-        }
 
 
         /// <summary>
@@ -3719,23 +4701,6 @@ namespace RazorEnhanced.RCE
             return true;
         }
 
-        /// <summary>
-        /// rename (serial) ('name')
-        /// </summary>
-        private bool RenamePet(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
-            if (args.Length != 2)
-            {
-                SendError("Incorrect parameters");
-                return true;
-            }
-            int serial = (int)args[0].AsSerial();
-            string newName = args[1].AsString();
-
-            Misc.PetRename(serial, newName);
-
-            return true;
-        }
         /// <summary>
         /// togglehands ('left'/'right')
         /// </summary>
@@ -3776,54 +4741,6 @@ namespace RazorEnhanced.RCE
                         Player.UnEquipItemByLayer("RightHand", false);
                     }
                 }
-            }
-            return true;
-        }
-
-        /// <summary>
-        /// unsetalias (alias name)
-        /// </summary>
-        private bool UnSetAlias(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
-            if (args.Length == 1)
-            {
-                string alias = args[0].AsString();
-                m_Interpreter.UnSetAlias(alias);
-            }
-
-            return true;
-        }
-
-        /// <summary>
-        /// setalias (alias name) [serial]
-        /// </summary>
-        private bool SetAlias(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
-            if (args.Length == 1)
-            {
-                return PromptAlias(node, args, quiet, force);
-            }
-            if (args.Length == 2)
-            {
-                string alias = args[0].AsString();
-                uint value = args[1].AsSerial();
-                m_Interpreter.SetAlias(alias, value);
-            }
-
-            return true;
-        }
-
-        /// <summary>
-        /// promptalias (alias name)
-        /// </summary>
-        private bool PromptAlias(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
-            if (args.Length == 1)
-            {
-                string alias = args[0].AsString();
-                RazorEnhanced.Target target = new RazorEnhanced.Target();
-                int value = target.PromptTarget("Target Alias for " + alias);
-                m_Interpreter.SetAlias(alias, (uint)value);
             }
             return true;
         }
@@ -3871,56 +4788,6 @@ namespace RazorEnhanced.RCE
 
             return true;
         }
-
-        /// <summary>
-        /// createlist (list name)
-        /// </summary>
-        private bool CreateList(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
-            if (args.Length >= 1)
-            {
-                Utility.Logger.Debug("Creating list {0}", args[0].AsString());
-                m_Interpreter.CreateList(args[0].AsString());
-            }
-            return true;
-        }
-
-        /// <summary>
-        /// pushlist('list name') ('element value') ['front'/'back']
-        /// </summary>
-        private bool PushList(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
-            if (args.Length < 2)
-            {
-                SendError("Usage: pushlist ('list name') ('element name') ('front'/'back']");
-                throw new RCERuntimeError(node, "Usage: pushlist ('list name') ('element name') ('front'/'back']");
-                // return true;
-            }
-
-            string listName = args[0].AsString();
-            string frontBack = "back";
-            if (args.Length == 3)
-            {
-                frontBack = args[2].AsString().ToLower();
-            }
-
-            uint resolvedAlias = m_Interpreter.GetAlias(args[1].AsString());
-            Argument insertItem = args[1];
-            if (resolvedAlias == uint.MaxValue)
-            {
-                Utility.Logger.Debug("Pushing {0} to list {1}", insertItem.AsString(), listName);
-                m_Interpreter.PushList(listName, insertItem, (frontBack == "front"), false);
-            }
-            else
-            {
-                ASTNode node_int = new ASTNode(ASTNodeType.INTEGER, resolvedAlias.ToString(), insertItem.Node, insertItem.Node.LineNumber);
-                Argument newArg = new Argument(insertItem._script, node_int);
-                Utility.Logger.Debug("Pushing {0} to list {1}", newArg.AsString(), listName);
-                m_Interpreter.PushList(listName, newArg, (frontBack == "front"), false);
-            }
-            return true;
-        }
-
 
         /// <summary>
         /// moveitemoffset (serial) 'ground' [(x, y, z)] [amount] 
@@ -4418,8 +5285,6 @@ namespace RazorEnhanced.RCE
             return NotImplemented(node, args, quiet, force);
         }
 
-
-
         /// <summary>
         /// dressconfig What is this supposed to do ? NOT IMPLEMENTED
         /// </summary>
@@ -4484,82 +5349,12 @@ namespace RazorEnhanced.RCE
         }
 
         /// <summary>
-        /// poplist ('list name') ('element value'/'front'/'back')
-        /// </summary>
-        private bool PopList(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
-            string frontBack = args[1].AsString().ToLower();
-            return m_Interpreter.PopList(args[0].AsString(), (frontBack == "front"));
-        }
-
-        /// <summary>
-        /// removelist ('list name')
-        /// </summary>
-        private bool RemoveList(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
-            m_Interpreter.DestroyList(args[0].AsString());
-            return true;
-        }
-
-        /// <summary>
-        /// clearlist ('list name')
-        /// </summary>
-        private bool ClearList(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
-            m_Interpreter.ClearList(args[0].AsString());
-            return true;
-        }
-
-        /// <summary>
         /// ping
         /// </summary>
         private static bool Ping(ASTNode node, Argument[] args, bool quiet, bool force)
         {
             Assistant.Commands.Ping(null);
             return true;
-        }
-
-        /// <summary>
-        /// playmacro 'name'
-        /// </summary>
-        private static bool PlayMacro(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
-            if (args.Length > 0)
-            {
-                var macroAndArgs = new List<string>();
-                foreach (var arg in args)
-                {
-                    macroAndArgs.Add(arg.AsString());
-                }
-                return Assistant.Commands.PlayScript(macroAndArgs.ToArray());
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// playsound (sound id/'file name') 
-        /// </summary>
-        private static bool PlaySound(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
-            if (args.Length == 1)
-            {
-                string filename = args[0].AsString();
-
-                Int32.TryParse(filename, out int amount);
-
-                if (amount > 0)
-                {
-                    Misc.PlaySound(amount, World.Player.Position.X, World.Player.Position.Y, World.Player.Position.Z);
-                    return true;
-                }
-
-                string fullpath = Path.Combine(Assistant.Engine.RootPath, filename);
-                System.Media.SoundPlayer player = new System.Media.SoundPlayer(fullpath);
-                player.Play();
-                return true;
-            }
-            return false;
         }
 
         /// <summary>
@@ -4620,7 +5415,6 @@ namespace RazorEnhanced.RCE
         {
             return NotImplemented(node, args, quiet, force);
         }
-
 
         [System.Runtime.InteropServices.DllImport("user32.dll")]
         static extern bool SetCursorPos(int x, int y);
@@ -4955,29 +5749,6 @@ namespace RazorEnhanced.RCE
         }
 
         /// <summary>
-        /// ignoreobject (serial)
-        /// </summary>
-        private static bool IgnoreObject(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
-            if (args.Length == 1)
-            {
-                uint serial = args[0].AsSerial();
-                Misc.IgnoreObject((int)serial);
-                return true;
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// clearignorelist
-        /// </summary>
-        private static bool ClearIgnoreList(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
-            Misc.ClearIgnore();
-            return true;
-        }
-
-        /// <summary>
         /// setskill ('skill name') ('locked'/'up'/'down')
         /// </summary>
         private static bool SetSkill(ASTNode node, Argument[] args, bool quiet, bool force)
@@ -5149,10 +5920,6 @@ namespace RazorEnhanced.RCE
             }
             return false;
         }
-
-
-
-
 
         /// <summary>
         /// chivalryheal [serial] 
@@ -5502,7 +6269,6 @@ namespace RazorEnhanced.RCE
 
             return false;
         }
-
 
         private bool ManageNamespaces_List(ASTNode node, string command, Argument[] args, bool quiet, bool force)
         {
@@ -6013,48 +6779,6 @@ namespace RazorEnhanced.RCE
         private static bool ClearTargetQueue(ASTNode node, Argument[] args, bool quiet, bool force)
         {
             RazorEnhanced.Target.ClearQueue();
-            return true;
-        }
-
-        /// <summary>
-        ///  settimer ('timer name') (milliseconds)
-        /// </summary>
-        private bool SetTimer(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
-            if (args.Length != 2)
-            {
-                WrongParameterCount(node, 2, args.Length);
-            }
-
-            m_Interpreter.SetTimer(args[0].AsString(), args[1].AsInt());
-            return true;
-        }
-
-        /// <summary>
-        ///  removetimer ('timer name')
-        /// </summary>
-        private bool RemoveTimer(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
-            if (args.Length != 1)
-            {
-                WrongParameterCount(node, 1, args.Length);
-            }
-
-            m_Interpreter.RemoveTimer(args[0].AsString());
-            return true;
-        }
-
-        /// <summary>
-        ///  createtimer ('timer name')
-        /// </summary>
-        private bool CreateTimer(ASTNode node, Argument[] args, bool quiet, bool force)
-        {
-            if (args.Length != 1)
-            {
-                WrongParameterCount(node, 1, args.Length);
-            }
-
-            m_Interpreter.CreateTimer(args[0].AsString());
             return true;
         }
 
@@ -7864,6 +8588,19 @@ namespace RazorEnhanced.RCE
             return _lists[name].Count > 0;
         }
 
+        public static bool PopList(string name, bool front, out Variable removedVar)
+        {
+            if (!_lists.ContainsKey(name))
+                throw new RunTimeError("List does not exist");
+
+            var list = _lists[name];
+            var idx = front ? 0 : _lists[name].Count - 1;
+
+            removedVar = list[idx];
+            list.RemoveAt(idx);
+
+            return list.Count > 0;
+        }
         public Argument GetListValue(string name, int idx)
         {
             if (!_lists.ContainsKey(name))
@@ -8045,6 +8782,157 @@ namespace RazorEnhanced.RCE
 
             _pauseTimeout = 0;
             _executionState = ExecutionState.RUNNING;
+        }
+
+        public class Variable
+        {
+            private string _value;
+
+            public Variable(string value)
+            {
+                _value = value;
+            }
+
+            // Treat the argument as an integer
+            public int AsInt()
+            {
+                if (_value == null)
+                    throw new RunTimeError("Cannot convert argument to int");
+
+                // Try to resolve it as a scoped variable first
+                var arg = Interpreter.GetVariable(_value);
+                if (arg != null)
+                    return arg.AsInt();
+
+                return TypeConverter.ToInt(_value);
+            }
+
+            // Treat the argument as an unsigned integer
+            public uint AsUInt()
+            {
+                if (_value == null)
+                    throw new RunTimeError("Cannot convert argument to uint");
+
+                // Try to resolve it as a scoped variable first
+                var arg = Interpreter.GetVariable(_value);
+                if (arg != null)
+                    return arg.AsUInt();
+
+                return TypeConverter.ToUInt(_value);
+            }
+
+            public ushort AsUShort()
+            {
+                if (_value == null)
+                    throw new RunTimeError("Cannot convert argument to ushort");
+
+                // Try to resolve it as a scoped variable first
+                var arg = Interpreter.GetVariable(_value);
+                if (arg != null)
+                    return arg.AsUShort();
+
+                return TypeConverter.ToUShort(_value);
+            }
+
+            // Treat the argument as a serial or an alias. Aliases will
+            // be automatically resolved to serial numbers.
+            public uint AsSerial()
+            {
+                if (_value == null)
+                    throw new RunTimeError("Cannot convert argument to serial");
+
+                // Try to resolve it as a scoped variable first
+                var arg = Interpreter.GetVariable(_value);
+                if (arg != null)
+                    return arg.AsSerial();
+
+                // Resolve it as a global alias next
+                uint serial = Interpreter.GetAlias(_value);
+                if (serial != uint.MaxValue)
+                    return serial;
+
+                try
+                {
+                    return AsUInt();
+                }
+                catch (RunTimeError)
+                { }
+
+                return Serial.MinusOne;
+            }
+
+            // Treat the argument as a string
+            public string AsString(bool resolve = true)
+            {
+                if (_value == null)
+                    throw new RunTimeError("Cannot convert argument to string");
+
+                if (resolve)
+                {
+                    // Try to resolve it as a scoped variable first
+                    var arg = Interpreter.GetVariable(_value);
+                    if (arg != null)
+                        return arg.AsString();
+                }
+
+                return _value;
+            }
+
+            public bool AsBool()
+            {
+                if (_value == null)
+                    throw new RunTimeError("Cannot convert argument to bool");
+
+                return TypeConverter.ToBool(_value);
+            }
+
+            public override bool Equals(object obj)
+            {
+                if (obj == null)
+                    return false;
+
+                Variable arg = obj as Variable;
+
+                if (arg == null)
+                    return false;
+
+                return Equals(arg);
+            }
+
+            public bool Equals(Variable other)
+            {
+                if (other == null)
+                    return false;
+
+                return (other._value == _value);
+            }
+        }
+
+        public static Variable GetVariable(string name)
+        {
+            var scope = _currentScope;
+            Variable result = null;
+
+            while (scope != null)
+            {
+                result = scope.GetVariable(name);
+                if (result != null)
+                    return result;
+
+                scope = scope.Parent;
+            }
+
+            return result;
+        }
+
+        public static void ClearVariable(string name)
+        {
+            _currentScope.ClearVariable(name);
+        }
+
+        public static bool ExistVariable(string name)
+        {
+            return _currentScope.ExistVariable(name);
         }
     }
 
@@ -8867,6 +9755,8 @@ namespace RazorEnhanced.RCE
             return result.ToArray();
         }
     }
+
+
 }
 
 

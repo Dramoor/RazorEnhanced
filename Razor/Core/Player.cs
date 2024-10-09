@@ -550,6 +550,30 @@ namespace Assistant
         private Serial m_LastDoor = Serial.Zero;
         private DateTime m_LastDoorTime = DateTime.MinValue;
 
+        public bool UseItem(Item cont, ushort find)
+        {
+            if (!Client.Instance.AllowBit(FeatureBit.PotionHotkeys))
+                return false;
+
+            for (int i = 0; i < cont.Contains.Count; i++)
+            {
+                Item item = (Item)cont.Contains[i];
+
+                if (item.TypeID == find)
+                {
+                    DoubleClick(item);
+                    return true;
+                }
+
+                if (item.Contains != null && item.Contains.Count > 0)
+                {
+                    if (UseItem(item, find))
+                        return true;
+                }
+            }
+
+            return false;
+        }
         internal void MoveReq(Direction dir, byte seq)
         {
             m_OutstandingMoves++;

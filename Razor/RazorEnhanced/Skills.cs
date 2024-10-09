@@ -8,6 +8,8 @@ namespace RazorEnhanced
         internal static Dictionary<int, string> m_SkillNameById = null;
         internal static Dictionary<string, int> m_SkillNameByName = null;
 
+        public static int StealthIndex { get; private set; }
+
         internal static int GetSkillId(string skillName)
         {
             if (m_SkillNameByName.ContainsKey(skillName))

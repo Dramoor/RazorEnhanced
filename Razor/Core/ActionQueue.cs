@@ -324,6 +324,25 @@ namespace Assistant
             return Drop(i, to.Serial, Point3D.MinusOne);
         }
 
+        public static void DropCurrent()
+        {
+            Log("Drop current requested on {0}", m_Holding);
+
+            if (m_Holding.IsItem)
+            {
+                if (World.Player.Backpack != null)
+                    Client.Instance.SendToServer(new DropRequest(m_Holding, Point3D.MinusOne,
+                        World.Player.Backpack.Serial));
+                else
+                    Client.Instance.SendToServer(new DropRequest(m_Holding, World.Player.Position, Serial.Zero));
+            }
+            else
+            {
+                World.Player.SendMessage(MsgLevel.Force, LocString.NoHold);
+            }
+
+            Clear();
+        }
         internal static bool LiftReject()
         {
             Log("Server rejected lift for item {0}", m_Holding);
@@ -513,6 +532,11 @@ namespace Assistant
             }
             m_Queue.Clear();
             DragDropManager.Clear();
+        }
+
+        public static bool Empty
+        {
+            get { return m_Queue.Count <= 0 && !m_Timer.Running; }
         }
 
         internal static string TimeLeft

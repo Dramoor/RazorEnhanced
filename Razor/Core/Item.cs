@@ -376,6 +376,23 @@ namespace Assistant
             return items;
         }
 
+        public int GetTotalCount()
+        {
+            int count = 0;
+
+            foreach (Item item in m_Items)
+            {
+                count++;
+
+                if (item.IsContainer)
+                {
+                    count += item.GetTotalCount();
+                }
+            }
+
+            return count;
+        }
+
         internal Item FindItemByName(TypeID id, bool recurse)
         {
             foreach (Item t in m_Items)

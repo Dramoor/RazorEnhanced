@@ -1545,6 +1545,23 @@ namespace Assistant
         }
     }
 
+    public sealed class PlayMusic : Packet
+    {
+        public PlayMusic(ushort num) : base(0x6D, 3)
+        {
+            Write(num);
+        }
+    }
+
+    public sealed class RenamePacket : Packet
+    {
+        public RenamePacket(uint serial, string newName) : base(0x75, 35)
+        {
+            Write(serial);
+            WriteAsciiFixed(newName, 30);
+        }
+    }
+
     internal sealed class SupportedFeatures : Packet
     {
         //private static int m_Value = 0x801F;

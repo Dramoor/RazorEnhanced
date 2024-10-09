@@ -747,7 +747,6 @@ namespace RazorEnhanced
             }
         }
 
-
         /// <summary>
         /// Cast again the last casted spell, on last target.
         /// </summary>
